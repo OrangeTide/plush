@@ -7,7 +7,7 @@ All code copyright (c) 1996-1997, Justin Frankel
 
 #include "plush.h"
 
-char plVersionString[] = "Plush 3D Version 1.1.1";
+char plVersionString[] = "Plush 3D Version 1.1.3";
 char plCopyrightString[] = 
   "Copyright (C) 1996-1997, Justin Frankel and Nullsoft";
 
@@ -274,7 +274,7 @@ pl_uChar plText_DefaultFont[256*16] = {
 void plTexDelete(pl_Texture *t) {
   char *plInternalString = 
         "Jasduasdsasdtasdiasdnasd asdwasdaasdsasd asdhasdeasdrasde";
-  *plInternalString=0;
+  plInternalString++;
   if (t) {
     if (t->Data) free(t->Data);
     if (t->PaletteData) free(t->PaletteData);

@@ -10,6 +10,7 @@ All code copyright (c) 1996-1997, Justin Frankel
 typedef struct {
   pl_Float zd;
   pl_Face *face;
+  pl_Bool clipneeded;
 } _faceInfo;
 
 #define plMatrixApply(m,x,y,z,outx,outy,outz) \
@@ -31,6 +32,8 @@ typedef struct {
   } \
 }
 
+pl_uInt32 plRender_TriStats[4];
+
 static pl_uInt32 _numfaces;
 static _faceInfo *_faces;
 
@@ -39,23 +42,16 @@ static pl_Float *_l;
 static pl_uInt32 _numlights;
 static pl_Light **_lights;
 static pl_Cam *_cam;
-static pl_sInt32 _cx, _cy; 
-static pl_Float _fov;
-static pl_Float _adj_asp;
-static int _SortFunc(const void *, const void *);
-static int _RevSortFunc(const void *, const void *);
 static void _RenderObj(pl_Obj *, pl_Float *, pl_Float *);
+static void _sift_down(int L, int U, int dir);
+static void _hsort(_faceInfo *base, int nel, int dir);
 
 void plRenderBegin(pl_Cam *Camera) {
   pl_Float tempMatrix[16];
+  memset(plRender_TriStats,0,sizeof(plRender_TriStats));
   _cam = Camera;
   _numlights = 0;
   _numfaces = 0;
-  _adj_asp = 1.0 / Camera->AspectRatio;
-  _fov = plMin(plMax(Camera->Fov,1),179);
-  _fov = (1.0/tan(_fov*(PL_PI/360.0)))*(Camera->ClipRight-Camera->ClipLeft);
-  _cx = Camera->CenterX<<16;
-  _cy = Camera->CenterY<<16;
   plMatrixRotate(_cMatrix,2,-Camera->Pan);
   plMatrixRotate(tempMatrix,1,-Camera->Pitch);
   plMatrixMultiply(_cMatrix,tempMatrix);
@@ -90,7 +86,6 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
   pl_Float nx = 0.0, ny = 0.0, nz = 0.0;
   pl_Float nx2, ny2, nz2;
   pl_Float tmp, tmp2;
-  pl_uChar z2, z1, x1, x2, y1, y2;
   pl_Float oMatrix[16], nMatrix[16], tempMatrix[16];
 
   pl_Vertex *vertex;
@@ -137,6 +132,7 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
   face = obj->Faces;
   facepos = _numfaces;
 
+  plRender_TriStats[0] += obj->NumFaces; 
   _numfaces += obj->NumFaces;
   _faces = (_faceInfo *) realloc(_faces,_numfaces*sizeof(_faceInfo));
   x = obj->NumFaces;
@@ -147,32 +143,8 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
     if (!obj->BackfaceCull || (plDotProduct(nx,ny,nz, 
         face->Vertices[0]->xformedx, face->Vertices[0]->xformedy,
         face->Vertices[0]->xformedz) < 0.0000001)) {
-      if (_cam->ClipBack > 0.0) 
-        z1 = (face->Vertices[0]->xformedz <= _cam->ClipBack) +
-           (face->Vertices[1]->xformedz <= _cam->ClipBack) +
-           (face->Vertices[2]->xformedz <= _cam->ClipBack);
-      else z1 = 3;
-      z2 = (face->Vertices[0]->xformedz >= 0) +
-         (face->Vertices[1]->xformedz >= 0) +
-         (face->Vertices[2]->xformedz >= 0);
-     tmp = (_cam->ClipRight-_cam->CenterX);
-      x1 = (face->Vertices[0]->xformedx*_fov<=tmp*face->Vertices[0]->xformedz) +
-           (face->Vertices[1]->xformedx*_fov<=tmp*face->Vertices[1]->xformedz) +
-           (face->Vertices[2]->xformedx*_fov<=tmp*face->Vertices[2]->xformedz);
-     tmp = (_cam->ClipLeft-_cam->CenterX);
-      x2 = (face->Vertices[0]->xformedx*_fov>=tmp*face->Vertices[0]->xformedz) +
-           (face->Vertices[1]->xformedx*_fov>=tmp*face->Vertices[1]->xformedz) +
-           (face->Vertices[2]->xformedx*_fov>=tmp*face->Vertices[2]->xformedz);
-      tmp = _fov*_adj_asp;
-      tmp2 = (_cam->ClipBottom-_cam->CenterY);
-      y1 = (face->Vertices[0]->xformedy*tmp<=tmp2*face->Vertices[0]->xformedz) +
-           (face->Vertices[1]->xformedy*tmp<=tmp2*face->Vertices[1]->xformedz) +
-           (face->Vertices[2]->xformedy*tmp<=tmp2*face->Vertices[2]->xformedz);
-      tmp2 = (_cam->ClipTop-_cam->CenterY);
-      y2 = (face->Vertices[0]->xformedy*tmp>=tmp2*face->Vertices[0]->xformedz) +
-           (face->Vertices[1]->xformedy*tmp>=tmp2*face->Vertices[1]->xformedz) +
-           (face->Vertices[2]->xformedy*tmp>=tmp2*face->Vertices[2]->xformedz);
-      if (z2 && z1 && x1 && x2 && y1 && y2) {
+      if ((i = plClipNeeded(face))) {
+        _faces[facepos].clipneeded = (i!=2);
         if (face->Material->_st & (PL_SHADE_FLAT|PL_SHADE_FLAT_DISTANCE)) {
           tmp = face->sLighting;
           if (face->Material->_st & PL_SHADE_FLAT) {
@@ -271,6 +243,7 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
         _faces[facepos].zd = face->Vertices[0]->xformedz+
         face->Vertices[1]->xformedz+face->Vertices[2]->xformedz;
         _faces[facepos++].face = face;
+        plRender_TriStats[1] ++; 
       } /* Is it in our area Check */
     } /* Backface Check */
     _numfaces = facepos;
@@ -284,13 +257,12 @@ void plRenderObj(pl_Obj *obj) {
 
 void plRenderEnd() {
   _faceInfo *f;
-  if (_cam->Sort > 0) 
-    qsort(_faces,_numfaces,sizeof(_faceInfo),_SortFunc); 
-  else if (_cam->Sort < 0) 
-    qsort(_faces,_numfaces,sizeof(_faceInfo),_RevSortFunc); 
+  if (_cam->Sort > 0) _hsort(_faces,_numfaces,0);
+  else if (_cam->Sort < 0) _hsort(_faces,_numfaces,1);
   f = _faces;
   while (_numfaces--) {
-    plClipRenderFace(f->face);
+    if (f->clipneeded) plClipRenderFace(f->face);
+    else plClipRenderFaceNC(f->face);
     f++;
   }
   if (_faces) free(_faces); 
@@ -302,10 +274,29 @@ void plRenderEnd() {
   _numlights = 0;
 }
 
-static int _SortFunc(const void *a, const void *b) {
-  return ((((_faceInfo *)b)->zd > ((_faceInfo *)a)->zd) ? 1 : -1);
+static _faceInfo *Base, tmp;
+
+static void _hsort(_faceInfo *base, int nel, int dir) {
+  static int i;
+  Base=base-1;
+  for (i=nel/2; i>0; i--) _sift_down(i,nel,dir);
+  for (i=nel; i>1; ) {
+    tmp = base[0]; base[0] = Base[i]; Base[i] = tmp;
+    _sift_down(1,i-=1,dir);
+  }
 }
 
-static int _RevSortFunc(const void *a, const void *b) {
-  return ((((_faceInfo *)b)->zd < ((_faceInfo *)a)->zd) ? 1 : -1);
+#define Comp(x,y) (( x ).zd < ( y ).zd ? 1 : 0)
+
+static void _sift_down(int L, int U, int dir) {	
+  static int c;
+  while (1) { 
+    c=L+L;
+    if (c>U) break;
+    if ( (c < U) && dir^Comp(Base[c+1],Base[c])) c++;
+    if (dir^Comp(Base[L],Base[c])) return;
+    tmp = Base[L]; Base[L] = Base[c]; Base[c] = tmp;
+    L=c;
+  }
 }
+#undef Comp

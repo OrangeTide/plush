@@ -1,4 +1,4 @@
-# Plush Linux MAKEFILE
+# Plush DJGPP v2 MAKEFILE
 # Makes ../libplush.a
 
 # Archiver
@@ -14,17 +14,15 @@ CFLAGS += -Wall -Wno-sign-compare
 CFLAGS += -ansi -pedantic
 
 # Normal optimization flags
-CFLAGS += -O6 -mpentium -frisc
-#CFLAGS += -O3 -m486
+CFLAGS += -O3 -m486
 # Additional optimization flags
 # good to use
 CFLAGS += -fomit-frame-pointer
 CFLAGS += -ffast-math
 # Probably blows the cache on 486s, but is good for iP5's...
-CFLAGS += -funroll-loops
+CFLAGS += -funroll-loops 
 #CFLAGS += -S
 #CFLAGS += -pg -O2 -m486
-#CFLAGS += -pg -g
 
 default: ../libplush.a
 

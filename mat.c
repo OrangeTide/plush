@@ -365,3 +365,93 @@ static void _plSetMaterialPutFace(pl_Mat *m) {
     break;
   }
 }
+
+typedef struct __ct {
+  pl_uChar r,g,b;
+  pl_Bool visited;
+  struct __ct *next;
+} _ct;
+
+int mdist(_ct *a, _ct *b) {
+  return ((a->r-b->r)*(a->r-b->r)+(a->g-b->g)*(a->g-b->g)+(a->b-b->b)*(a->b-b->b));
+}
+
+void plMatMakeOptPal2(pl_uChar *p, pl_uChar pstart, 
+                     pl_uChar pend, pl_Mat **materials) {
+  pl_uChar *allColors = 0;
+  pl_uInt numColors = 0, nc;
+  pl_uChar len = pend - pstart;
+  pl_sInt32 x, current, newnext, bestdist, thisdist;
+  _ct *colorBlock, *best, *cp;
+
+  for (x = 0; materials[x]; x ++) {
+    if (!materials[x]->_RequestedColors) plMatInit(materials[x]);
+    allColors = (pl_uChar *) realloc((void *)allColors,
+                             (numColors+materials[x]->_ColorsUsed)*3);
+    memcpy(allColors + (numColors*3), materials[x]->_RequestedColors,
+           materials[x]->_ColorsUsed*3);
+    numColors += materials[x]->_ColorsUsed;
+  }
+
+  if (numColors <= len) {
+    memcpy(p+pstart*3,allColors,numColors*3);
+    free(allColors);
+    return;
+  } 
+
+  colorBlock = (_ct *) malloc(sizeof(_ct)*numColors);
+  for (x = 0; x < numColors; x++) {
+    colorBlock[x].r = allColors[x*3];
+    colorBlock[x].g = allColors[x*3+1];
+    colorBlock[x].b = allColors[x*3+2];
+    colorBlock[x].visited = 0;
+    colorBlock[x].next = 0;
+  }
+  free(allColors);
+
+  /* Build a list, starting at color 0 */
+  current = 0;
+  nc = numColors;
+  do {
+    newnext = -1;
+    bestdist = 300000000;
+    colorBlock[current].visited = 1;
+    for (x = 0; x < nc; x ++) {
+      if (!colorBlock[x].visited) {
+        thisdist = mdist(colorBlock + x, colorBlock + current);
+        if (thisdist < 5) { colorBlock[x].visited = 1; numColors--; }
+        else if (thisdist < bestdist) { bestdist = thisdist; newnext = x; }
+      }
+    }
+    if (newnext != -1) {
+      colorBlock[current].next = colorBlock + newnext;
+      current = newnext;
+    } 
+  } while (newnext != -1);
+  colorBlock[current].next = 0; /* terminate the list */
+
+  /* we now have a linked list starting at colorBlock, which is each one and
+     it's closest neighbor */
+
+  while (numColors > len) {
+    bestdist = mdist(colorBlock,colorBlock->next);
+    for (best = cp = colorBlock; cp->next; cp = cp->next) {
+      if (bestdist > (thisdist = mdist(cp,cp->next))) {
+        best = cp;
+        bestdist = thisdist;
+      }
+    }
+    best->r = ((int) best->r + (int) best->next->r)>>1;
+    best->g = ((int) best->g + (int) best->next->g)>>1;
+    best->b = ((int) best->b + (int) best->next->b)>>1;
+    best->next = best->next->next;
+    numColors--;
+  }
+  x = pstart*3;
+  for (cp = colorBlock; cp; cp = cp->next) {
+    p[x++] = cp->r;
+    p[x++] = cp->g;
+    p[x++] = cp->b;
+  }
+  free(colorBlock);
+}

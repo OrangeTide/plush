@@ -64,9 +64,9 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
   V1 = V2 = MappingV1;
   X2 = X1 = TriFace->Scrx[i0];
   Z2 = Z1 = TriFace->Scrz[i0];
-  Y0 = (TriFace->Scry[i0]+32768)>>16;
-  Y1 = (TriFace->Scry[i1]+32768)>>16;
-  Y2 = (TriFace->Scry[i2]+32768)>>16;
+  Y0 = (TriFace->Scry[i0]+(1<<19))>>20;
+  Y1 = (TriFace->Scry[i1]+(1<<19))>>20;
+  Y2 = (TriFace->Scry[i2]+(1<<19))>>20;
 
   dY = Y2-Y0;
   if (dY) {
@@ -107,13 +107,13 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
 
-  XL1 = ((dX1-dX2)*dY+32768)>>16;
+  XL1 = ((dX1-dX2)*dY+(1<<19))>>20;
   if (XL1) {
     dUL = ((dU1-dU2)*dY)/XL1;
     dVL = ((dV1-dV2)*dY)/XL1;
     dZL = ((dZ1-dZ2)*dY)/XL1;
   } else {
-    XL1 = ((X2-X1+32768)>>16);
+    XL1 = ((X2-X1+(1<<19))>>20);
     if (XL1) {
       dUL = (U2-U1)/XL1;
       dVL = (V2-V1)/XL1;
@@ -127,7 +127,7 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
 
   while (Y0 < Y2) {
     if (Y0 == Y1) {
-      dY = Y2-((TriFace->Scry[i1]+32768)>>16);
+      dY = Y2-((TriFace->Scry[i1]+(1<<19))>>20);
       if (dY) {
         if (stat & 1) {
           X1 = TriFace->Scrx[i1];
@@ -150,8 +150,8 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
         dU1 = (MappingU3 - U1) / dY;
       }
     }
-    XL1 = (X1+32768)>>16;
-    Xlen = ((X2+32768)>>16) - XL1;
+    XL1 = (X1+(1<<19))>>20;
+    Xlen = ((X2+(1<<19))>>20) - XL1;
     if (Xlen > 0) {
       register pl_Float t;
       pZL = ZL = Z1;
@@ -279,9 +279,9 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
   V1 = V2 = MappingV1;
   X2 = X1 = TriFace->Scrx[i0];
   Z2 = Z1 = TriFace->Scrz[i0];
-  Y0 = (TriFace->Scry[i0]+32768)>>16;
-  Y1 = (TriFace->Scry[i1]+32768)>>16;
-  Y2 = (TriFace->Scry[i2]+32768)>>16;
+  Y0 = (TriFace->Scry[i0]+(1<<19))>>20;
+  Y1 = (TriFace->Scry[i1]+(1<<19))>>20;
+  Y2 = (TriFace->Scry[i2]+(1<<19))>>20;
 
   dY = Y2-Y0;
   if (dY) {
@@ -327,14 +327,14 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
   gmem += (Y0 * scrwidth);
   zbuf += (Y0 * scrwidth);
 
-  XL1 = (((dX1-dX2)*dY+32768)>>16);
+  XL1 = (((dX1-dX2)*dY+(1<<19))>>20);
   if (XL1) {
     dUL = ((dU1-dU2)*dY)/XL1;
     dVL = ((dV1-dV2)*dY)/XL1;
     dZL = ((dZ1-dZ2)*dY)/XL1;
     dCL = ((dC1-dC2)*dY)/XL1;
   } else {
-    XL1 = ((X2-X1+32768)>>16);
+    XL1 = ((X2-X1+(1<<19))>>20);
     if (XL1) {
       dUL = (U2-U1)/XL1;
       dVL = (V2-V1)/XL1;
@@ -350,7 +350,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
   Y0 = Y2-Y0;
   while (Y0--) {
     if (!Y1--) {
-      dY = Y2-((TriFace->Scry[i1]+32768)>>16); 
+      dY = Y2-((TriFace->Scry[i1]+(1<<19))>>20); 
       if (dY) {
         if (stat & 1) {
           X1 = TriFace->Scrx[i1];
@@ -374,8 +374,8 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
         dU1 = (MappingU3 - U1) / dY;
       }
     }
-    XL1 = (X1+32768)>>16;
-    Xlen = ((X2+32768)>>16) - XL1;
+    XL1 = (X1+(1<<19))>>20;
+    Xlen = ((X2+(1<<19))>>20) - XL1;
     if (Xlen > 0) {
       register pl_Float t;
       CL = C1;

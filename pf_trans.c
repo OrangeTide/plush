@@ -25,9 +25,9 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
 
   X2 = X1 = TriFace->Scrx[i0];
   Z2 = Z1 = TriFace->Scrz[i0];
-  Y0 = (TriFace->Scry[i0]+32768)>>16;
-  Y1 = (TriFace->Scry[i1]+32768)>>16;
-  Y2 = (TriFace->Scry[i2]+32768)>>16;
+  Y0 = (TriFace->Scry[i0]+(1<<19))>>20;
+  Y1 = (TriFace->Scry[i1]+(1<<19))>>20;
+  Y2 = (TriFace->Scry[i2]+(1<<19))>>20;
 
   dY = Y2 - Y0;
   if (dY) {
@@ -58,17 +58,17 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
   if (zb) {
-    XL1 = (((dX1-dX2)*dY+32768)>>16);
+    XL1 = (((dX1-dX2)*dY+(1<<19))>>20);
     if (XL1) dZL = ((dZ1-dZ2)*dY)/XL1;
     else { 
-      XL1 = ((X2-X1+32768)>>16);
+      XL1 = ((X2-X1+(1<<19))>>20);
       if (XL1) dZL = (Z2-Z1)/XL1;
     }
   }
 
   while (Y0 < Y2) {
     if (Y0 == Y1) {
-      dY = Y2 - ((TriFace->Scry[i1]+32768)>>16);
+      dY = Y2 - ((TriFace->Scry[i1]+(1<<19))>>20);
       if (dY) {
         if (stat & 1) {
           X1 = TriFace->Scrx[i1];
@@ -89,8 +89,8 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
         dZ1 = (TriFace->Scrz[i2]- Z1)/dY;
       }
     }
-    XL1 = (X1+32768)>>16;
-    XL2 = (X2+32768)>>16;
+    XL1 = (X1+(1<<19))>>20;
+    XL2 = (X2+(1<<19))>>20;
     ZL = Z1;
     if ((XL2-XL1) > 0) {
       XL2 -= XL1; 
@@ -138,9 +138,9 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
   C1 = C2 = TriFace->Shades[i0]*nc;
   X2 = X1 = TriFace->Scrx[i0];
   Z2 = Z1 = TriFace->Scrz[i0];
-  Y0 = (TriFace->Scry[i0]+32768)>>16;
-  Y1 = (TriFace->Scry[i1]+32768)>>16;
-  Y2 = (TriFace->Scry[i2]+32768)>>16;
+  Y0 = (TriFace->Scry[i0]+(1<<19))>>20;
+  Y1 = (TriFace->Scry[i1]+(1<<19))>>20;
+  Y2 = (TriFace->Scry[i2]+(1<<19))>>20;
 
   dY = Y2 - Y0;
   if (dY) {
@@ -175,12 +175,12 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
-  XL1 = (((dX1-dX2)*dY+32768)>>16);
+  XL1 = (((dX1-dX2)*dY+(1<<19))>>20);
   if (XL1) {
     dCL = ((dC1-dC2)*dY)/XL1;
     dZL = ((dZ1-dZ2)*dY)/XL1;
   } else {
-    XL1 = ((X2-X1+32768)>>16);
+    XL1 = ((X2-X1+(1<<19))>>20);
     if (XL1) {
       dCL = (C2-C1)/XL1;
       dZL = (Z2-Z1)/XL1;
@@ -189,7 +189,7 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
 
   while (Y0 < Y2) {
     if (Y0 == Y1) {
-      dY = Y2 - ((TriFace->Scry[i1]+32768)>>16);
+      dY = Y2 - ((TriFace->Scry[i1]+(1<<19))>>20);
       if (dY) {
         if (stat & 1) {
           X1 = TriFace->Scrx[i1];
@@ -212,8 +212,8 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
       }
     }
     CL = C1;
-    XL1 = (X1+32768)>>16;
-    XL2 = (X2+32768)>>16;
+    XL1 = (X1+(1<<19))>>20;
+    XL2 = (X2+(1<<19))>>20;
     ZL = Z1;
     if ((XL2-XL1) > 0) {
       XL2 -= XL1; 

@@ -52,8 +52,8 @@ void plClipSetFrustum(pl_Cam *cam) {
   _adj_asp = 1.0 / cam->AspectRatio;
   _fov = plMin(plMax(cam->Fov,1),179);
   _fov = (1.0/tan(_fov*(PL_PI/360.0)))*(cam->ClipRight-cam->ClipLeft);
-  _cx = cam->CenterX<<16;
-  _cy = cam->CenterY<<16;
+  _cx = cam->CenterX<<20;
+  _cy = cam->CenterY<<20;
   _cam = cam;
   p = _clipPlanes;
   /* Back */
@@ -205,6 +205,8 @@ void plClipRenderFace(pl_Face *face) {
   static pl_Float eMappingU[2][8];
   static pl_Float eMappingV[2][8];
 
+  if (!face->Material->_PutFace) return;
+
   for (a = 0; a < 3; a ++) {
     newVertices[0][a] = *(face->Vertices[a]);
     Shades[0][a] = face->Shades[a];
@@ -239,14 +241,64 @@ void plClipRenderFace(pl_Face *face) {
         newface.MappingV[a] = MappingV[q][w];
         newface.eMappingU[a] = eMappingU[q][w];
         newface.eMappingV[a] = eMappingV[q][w];
-        tmp2 = _fov / newface.Vertices[a]->xformedz;
+        newface.Scrz[a] = 1.0/newface.Vertices[a]->xformedz;
+        tmp2 = _fov * newface.Scrz[a];
         tmp = tmp2*newface.Vertices[a]->xformedx;
         tmp2 *= newface.Vertices[a]->xformedy;
-        newface.Scrx[a] = _cx + ((pl_sInt32)((tmp*65536.0)));
-        newface.Scry[a] = _cy - ((pl_sInt32)((tmp2*_adj_asp*65536.0)));
-        newface.Scrz[a] = 1.0/newface.Vertices[a]->xformedz;
+        newface.Scrx[a] = _cx + ((pl_sInt32)((tmp*(float) (1<<20))));
+        newface.Scry[a] = _cy - ((pl_sInt32)((tmp2*_adj_asp*(float) (1<<20))));
       }
-      if (newface.Material->_PutFace) newface.Material->_PutFace(_cam,&newface);
+      newface.Material->_PutFace(_cam,&newface);
+      plRender_TriStats[3] ++; 
     }
+    plRender_TriStats[2] ++; 
   }
+}
+
+void plClipRenderFaceNC(pl_Face *face) {
+  pl_uChar a;
+  pl_Float tmp, tmp2;
+  if (face->Material->_PutFace)  {
+    for (a = 0; a < 3; a ++) {
+      face->Shades[a] = plMax(0.0,plMin(face->Shades[a],1.0));
+      face->Scrz[a] = 1.0 / face->Vertices[a]->xformedz;
+      tmp2 = _fov * face->Scrz[a];
+      tmp = tmp2*face->Vertices[a]->xformedx;
+      tmp2 *= face->Vertices[a]->xformedy;
+      face->Scrx[a] = _cx + ((pl_sInt32)((tmp*(float) (1<<20))));
+      face->Scry[a] = _cy - ((pl_sInt32)((tmp2*_adj_asp*(float) (1<<20))));
+    }
+    face->Material->_PutFace(_cam,face);
+    plRender_TriStats[2]++;
+    plRender_TriStats[3]++;
+  }
+}
+
+pl_sInt plClipNeeded(pl_Face *face) {
+  pl_sInt dr,dl,db,dt; 
+  pl_Float f;
+  dr = (_cam->ClipRight-_cam->CenterX);
+  dl = (_cam->ClipLeft-_cam->CenterX);
+  db = (_cam->ClipBottom-_cam->CenterY);
+  dt = (_cam->ClipTop-_cam->CenterY);
+  f = _fov*_adj_asp;
+  return ((_cam->ClipBack <= 0.0 ||
+           face->Vertices[0]->xformedz <= _cam->ClipBack ||
+           face->Vertices[1]->xformedz <= _cam->ClipBack ||
+           face->Vertices[2]->xformedz <= _cam->ClipBack) &&
+          (face->Vertices[0]->xformedz >= 0 ||
+           face->Vertices[1]->xformedz >= 0 || 
+           face->Vertices[2]->xformedz >= 0) &&
+          (face->Vertices[0]->xformedx*_fov<=dr*face->Vertices[0]->xformedz ||
+           face->Vertices[1]->xformedx*_fov<=dr*face->Vertices[1]->xformedz ||
+           face->Vertices[2]->xformedx*_fov<=dr*face->Vertices[2]->xformedz) &&
+          (face->Vertices[0]->xformedx*_fov>=dl*face->Vertices[0]->xformedz ||
+           face->Vertices[1]->xformedx*_fov>=dl*face->Vertices[1]->xformedz ||
+           face->Vertices[2]->xformedx*_fov>=dl*face->Vertices[2]->xformedz) &&
+          (face->Vertices[0]->xformedy*f<=db*face->Vertices[0]->xformedz ||
+           face->Vertices[1]->xformedy*f<=db*face->Vertices[1]->xformedz ||
+           face->Vertices[2]->xformedy*f<=db*face->Vertices[2]->xformedz) &&
+          (face->Vertices[0]->xformedy*f>=dt*face->Vertices[0]->xformedz ||
+           face->Vertices[1]->xformedy*f>=dt*face->Vertices[1]->xformedz ||
+           face->Vertices[2]->xformedy*f>=dt*face->Vertices[2]->xformedz));
 }

@@ -1,4 +1,4 @@
-# Plush DJGPP v2 MAKEFILE
+# Plush Linux Shared MAKEFILE
 # Makes ../libplush.a
 
 # Archiver
@@ -14,7 +14,8 @@ CFLAGS += -Wall
 CFLAGS += -ansi -pedantic
 
 # Normal optimization flags
-CFLAGS += -O3 -m486
+CFLAGS += -O6 -mpentium -frisc
+#CFLAGS += -O3 -m486
 # Additional optimization flags
 # good to use
 CFLAGS += -fomit-frame-pointer

@@ -80,7 +80,7 @@ typedef struct _pl_Face {
   pl_Float nx, ny, nz;         /* Normal of triangle (object space) */
   pl_Mat *Material;            /* Material of triangle */
   pl_sInt32 Scrx[3], Scry[3];  /* Projected screen coordinates
-                                  (16.16 fixed point) */
+                                  (12.20 fixed point) */
   pl_Float Scrz[3];            /* Projected 1/Z coordinates */
   pl_sInt32 MappingU[3], MappingV[3]; 
                                /* 16.16 Texture mapping coordinates */ 
