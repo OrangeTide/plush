@@ -3,6 +3,7 @@ Plush Version 1.1
 plush.c
 Misc code and data
 All code copyright (c) 1996-1997, Justin Frankel
+Free for non-commercial use. See license.txt for more information.
 ******************************************************************************/
 
 #include "plush.h"

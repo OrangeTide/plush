@@ -1,10 +1,31 @@
 /******************************************************************************
   plush.h
   PLUSH 3D VERSION 1.1 MAIN HEADER
-  Copyright (c) 1996-1997 Justin Frankel
-  Do not distribute seperately from the rest of the package.
+  Copyright (c) 1996-1998 Justin Frankel
+  Copyright (c) 1998-2000 Nullsoft, Inc.
+
   For more information on Plush and the latest updates, please visit
-    http://nullsoft.home.ml.org/plush/
+    http://www.nullsoft.com
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely, subject to the following restrictions:
+
+  1. The origin of this software must not be misrepresented; you must not
+     claim that you wrote the original software. If you use this software
+     in a product, an acknowledgment in the product documentation would be
+     appreciated but is not required.
+  2. Altered source versions must be plainly marked as such, and must not be
+     misrepresented as being the original software.
+  3. This notice may not be removed or altered from any source distribution.
+
+  Justin Frankel
+  justin@nullsoft.com
+
 ******************************************************************************/
 
 #ifndef _PLUSH_H_

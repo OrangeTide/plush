@@ -4,7 +4,7 @@
   Copyright (c) 1996-1997 Justin Frankel
   Do not distribute seperately from the rest of the package.
   For more information on Plush and the latest updates, please visit
-    http://nullsoft.home.ml.org/plush/
+    http://nullsoft.com/plush/
 ******************************************************************************/
 
 #ifndef _PL_DEFS_H_

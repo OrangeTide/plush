@@ -1,0 +1,333 @@
+<html>
+  <head>
+    <title>Plush 1.1 API Documentation</title>
+  </head>
+  <body>
+    <h1 align=center>Plush v1.1 API Documentation</h1>
+    <h3 align=center>by Justin Frankel</h3>
+    <h2 align=center>(Document revision 0.1)</h2>
+    <h3>Table of Contents:</h3>
+    <ol>
+      <li><a href="#preface">Preface</a>
+      <li><a href="#notes">Some Notes</a>
+      <li><a href="#defs">Definitions</a>
+      <li><a href="#types">Types</a>
+      <li><a href="#functions">Functions & Variables</a>
+        <ul>
+          <li>Variables
+          <li>Material Functions
+        </ul>
+    </ol>
+    <hr size=10>
+    <a name="preface"><h3>Preface</h3>
+    <ul>
+      Welcome to the Plush v1.1 API Documentation. This doc serves totally as
+      a reference. For examples and a tutorial, please see [whatever].
+    </ul>
+    <hr size=10>
+    <a name="notes"><h3>Some Notes</h3>
+    <ul>
+      Here are some general notes about the way Plush works:
+      <ul>
+        <li><a name="WorldSpace">
+            Worldspace is in a unusual coordinate system. For example, if the
+            camera is at the origin and not rotated, X is positive to the right,
+            Y is positive upward, and Z is positive going into the screen. I.e.
+            behind the camera is negative Z.
+        <li>None more at this time.  
+      </ul>
+    </ul>
+    <hr size=10>
+    <a name="defs"><h3>Definitions</h3>
+    <ul>
+      These are #defines that can be found in pl_defs.h and pl_conf.h:<br><br>
+      <table border=5 width="90%">
+        <tr><th>Name</th><th>Value/Meaning</th></tr>
+        <tr><td><a name="PL_PI">PL_PI</td><td>3.14159265359</td></tr>
+        <tr><td><a name="PL_SHADE_">PL_SHADE_*</td><td>Shade types
+           for use with <a href="#pl_Mat">pl_Mat</a>.ShadeType.<ul>
+             <li>PL_SHADE_NONE: no shading
+             <li>PL_SHADE_FLAT: flat light shading. If no lights, behaves just
+                 like PL_SHADE_NONE
+             <li>PL_SHADE_FLAT_DISTANCE: flat distance shading. Note: this can 
+                 be bitwise ORed (i.e. |) with PL_SHADE_FLAT for both.
+             <li>PL_SHADE_GOURAUD: Gouraud light shading. 
+             <li>PL_SHADE_GOURAUD_DISTANCE: Gouraud distance shading. 
+                 Note: this can be bitwise ORed (i.e. |) with PL_SHADE_GOURAUD 
+                 for both.
+           </ul>
+        </td></tr>
+        <tr><td><a name="PL_LIGHT_">PL_LIGHT_*</td><td>Light Modes for use with
+          <a href="#plLightSet">plLightSet()</a> and <a href="#pl_Light">
+          pl_Light</a>.Type.<ul>
+            <li>PL_LIGHT_NONE: no light (why would you use this?)       
+            <li>PL_LIGHT_VECTOR: vector light at an infinite distance.
+            <li>PL_LIGHT_POINT_DISTANCE: point proximity light. The closer an
+                object is to this the brighter it is.
+            <li>PL_LIGHT_POINT_ANGLE: point light, with intensity calculated
+                by angle between light->object vector and normal of object.
+            <li>PL_LIGHT_POINT: a combination of the previous two.
+         </ul></td></tr>
+        <tr><td><a name="PL_MAX_CHILDREN">PL_MAX_CHILDREN</td><td>The maximum
+          number of children a <a href="#pl_Obj">pl_Obj</a> can have. 
+                   (Typically 16)</td></tr>
+      </table>
+    </ul>
+    <hr size=10>
+    <a name="types"><h3>Types</h3>
+    <ul>
+      Plush has a number of different types that you might need to use in your
+      programs. They are all defined in pl_conf.h (simple types) pl_types.h
+      (complicated structure types). Here they are:<br><br>
+      <table border=5 width="90%">
+        <tr><th colspan=2><font size="+2">Simple Types</font></th></tr>
+        <tr><th>Name</th><th>Definition</th></tr>
+        <tr><td><a name="pl_ZBuffer">pl_ZBuffer</td><td>
+          The Z-buffer type. Usually used when allocating a zbuffer,
+          usually float.
+        </td></tr>
+        <tr><td><a name="pl_Float">pl_Float</td><td>
+          General floating point type, usually float or double
+        </td></tr>
+        <tr><td><a name="pl_IEEEFloat32">pl_IEEEFloat32</td><td>
+          32 bit IEEE floating point, usually float or double.
+          Only really used with .3DS reader
+        </td></tr>
+        <tr><td><a name="pl_sInt32">pl_sInt32</td><td>
+          Signed 32 bit integer, usually signed long int
+        </td></tr>
+        <tr><td><a name="pl_uInt32">pl_uInt32</td><td>
+          Unsigned 32 bit integer, usually unsigned long int
+        </td></tr>
+        <tr><td><a name="pl_sInt16">pl_sInt16</td><td>
+          Signed 16 bit integer, usually signed short int
+        </td></tr>
+        <tr><td><a name="pl_uInt16">pl_uInt16</td><td>
+          Unsigned 16 bit integer, usually unsigned short int
+        </td></tr>
+        <tr><td><a name="pl_sInt">pl_sInt</td><td>
+          Signed optimal integer, usually signed int
+        </td></tr>
+        <tr><td><a name="pl_uInt">pl_uInt</td><td>
+          Unsigned optimal bit integer, usually unsigned int
+        </td></tr>
+        <tr><td><a name="pl_Bool">pl_Bool</td><td>
+          Fake boolean value. Usually char.
+        </td></tr>
+        <tr><td><a name="pl_uChar">pl_uChar</td><td>
+          Unsigned 8 bit type, usually unsigned char
+        </td></tr>
+        <tr><td><a name="pl_sChar">pl_sChar</td><td>
+          Signed 8 bit type, usually signed char
+        </td></tr>
+      </table>
+      <br><br>
+      <table border=5 width="90%">
+        <tr><th colspan=2><font size="+2">Non-Simple Types</font></th></tr>
+        <tr><th>Name</th><th>Definition</th></tr>
+        <tr><td><a name="pl_Cam">pl_Cam</td><td>
+          Camera type. See <A href="#CameraFunc">plCamera*()</a>. Contents:<ul>
+          <li><a href="#pl_Float">pl_Float</a> Fov: Field of view in degrees. 
+            Should be between 1 and 179
+          <li><a href="#pl_Float">pl_Float</a> Aspect ratio: Aspect ratio,
+            normally 1.0, but in wierd resolutions, this should be something
+            like "screenwidth/screenheight * 3.0/4.0."
+          <li><a href="#pl_sChar">pl_sChar</a> Sort: How shall 
+            <a href="#RenderFunc">plRender*()</a> sort
+            polygons? 0: no sorting. -1: front to back. 1: back to front.
+          <li><a href="#pl_Float">pl_Float</a> ClipBack:
+            sets the far clip plane. Any value less than or equal to 0.0 
+            disables the far clip plane.
+          <li><a href="#pl_sInt">pl_sInt</a>
+            ClipTop, ClipLeft, ClipBottom, ClipRight: screen clipping coords.
+            Usually 0, 0, screenheight, screenwidth respectively.
+          <li><a href="#pl_uInt">pl_uint</a>ScreenWidth, ScreenHeight:
+            the screen width (line width) and screen height of the framebuffer.
+          <li><a href="#pl_sInt">pl_sInt</a>
+            CenterX, CenterY: the place on the screen where 0,0,z projects to. 
+            Usually screenwidth/2 and screenheight/2 respectively.   
+          <li><a href="#pl_Float">pl_Float</a> X, Y, Z:
+            The X Y and Z coordinates of the Camera in 
+            <a href="#WorldSpace">Worldspace.</a>
+          <li><a href="#pl_Float">pl_Float</a> Pitch, Pan, Roll:
+            The rotation of the Camera in <a href="#WorldSpace">Worldpsace</a>.
+            Pitch is the up-down rotation, with positive being up. Pan is 
+            left-right rotation, with positive being right, and Roll is rotation
+            around the viewing axis, with positive being clockwise.
+          <li><a href="#pl_uChar">pl_uChar *</a> frameBuffer:
+            a pointer to the buffer of type pl_uChar, and dimensions
+            screenwidth*screenheight to which rendering will occur.
+          <li><a href="#pl_ZBuffer">pl_ZBuffer *</a> zBuffer:
+            a pointer to the buffer of type pl_ZBuffer, and dimensions
+            screenwidth*screenheight to which Z-buffering will occur. Or NULL,
+            to disable Z-buffering.
+          </ul>
+        </td></tr>
+        <tr><td><a name="pl_Light">pl_Light</td><td>
+          Light type. See <a href="#LightFunc">plLight*()</a>. Contents:<ul>
+            <li><a href="#pl_uChar">pl_uChar</a> Type: Type of light, one of
+                <a href="#PL_LIGHT_">PL_LIGHT_*</a>
+            <li><a href="#pl_Float">pl_Float</a> Xp, Yp, Zp:
+               This can mean two things: <ul>
+                 <li>If Type is PL_LIGHT_VECTOR: the unit vector of the light
+                 <li>If Type is PL_LIGHT_POINT_*: the position of the light
+               </ul>
+            <li><a href="#pl_Float">pl_Float</a> Intensity: 
+               The intensity of the light. Usually from 0.0 to 1.0. Can be 
+               greater and brightness will be clipped.
+            <li><a href="#pl_Float">pl_Float</a> HalfDistSquared:
+               The square of the distance at which 
+               <a href="PL_LIGHT_POINT">PL_LIGHT_POINT</a> or 
+               <a href="PL_LIGHT_POINT_DISTANCE">PL_LIGHT_POINT_DISTANCE</a> 
+               will be 1/2 brightness.
+          </ul>
+        </td></tr>
+        <tr><td><a name="pl_Obj">pl_Obj</td><td>
+          Object type. See <a href="#ObjFunc">plObj*()</a>. Contents:<ul>
+            <li><a href="#pl_uInt32">pl_uInt32</a> NumVertices:
+              the number of vertices in the object.
+            <li><a href="#pl_uInt32">pl_uInt32</a> NumFaces:
+              the number of faces (triangles) in the object.
+            <li><a href="#pl_Vertex">pl_Vertex *</a> Vertices:
+              a pointer to an array of "NumVertices" vertices.
+            <li><a href="#pl_Face">pl_Face *</a> Faces:
+              a pointer to an array of "NumFaces" faces.
+            <li><a href="#pl_Obj">pl_Obj</a> Children[
+              <a href="#PL_MAX_CHILDREN">PL_MAX_CHILDREN</a>]:
+              a list of children. Either pointers to the children, or 0
+              if no children.
+            <li><a href="#pl_Bool">pl_Bool</a> BackfaceCull:
+              are backfacing triangles drawn in this object?
+            <li><a href="#pl_Bool">pl_Bool</a> BackfaceIllumination:
+              are triangles illuminated from lights that are behind them?
+            <li><a href="#pl_Bool">pl_Bool</a> GenMatrix:
+              generate a transformation matrix from the following?
+            <li><a href="#pl_Float">pl_Float</a> Xp, Yp, Zp, Xa, Ya, Za:
+              Translation and Rotation values. Translation values are in object
+              space. Rotation values are in degrees. Rotations happen around 
+              the X then Y then Z. These are only used if GenMatrix is set
+              (see above)
+            <li><a href="#pl_Float">pl_Float</a> Matrix[16]:
+              A 4x4 transformation matrix which is used if GenMatrix is not set.
+            <li><a href="#pl_Float">pl_Float</a> RotMatrix[16]:
+              A 4x4 transformation matrix for normals (i.e. no translation) 
+              which is used if GenMatrix is not set.
+          </ul>
+        </td></tr>
+        <tr><td><a name="pl_Vertex">pl_Vertex</td><td>
+          Vertex type. Used with <a href="#pl_Obj">pl_Obj</a>.
+           Contents:<ul>
+            <li><a href="#pl_Float">pl_Float</a> x, y, z: the 
+                <a href="#WorldSpace">WorldSpace</a> coordinates of the point.
+            <li><a href="#pl_Float">pl_Float</a> xformedx, xformedy, xformedz:
+                the transformed coordinates of the point.
+            <li><a href="#pl_Float">pl_Float</a> nx, ny, nz: the 
+                <a href="#WorldSpace">WorldSpace</a> normal of the point.
+            <li><a href="#pl_Float">pl_Float</a>
+                xformednx, xformedny, xformednz: the transformed normal of the 
+                point.
+           </ul>
+        </td></tr>
+        <tr><td><a name="pl_Face">pl_Face</td><td>
+          Face (triangle) type. Used with <a href="#pl_Obj">pl_Obj</a>.
+            Contents:<ul>
+            <li><a href="#pl_Vertex">pl_Vertex</a> *Vertices[3]: pointers to 
+                the three vertices of the triangle.
+            <li><a href="#pl_Float">pl_Float</a> nx, ny, nz: the normal of the
+                triangle in object space.
+            <li><a href="#pl_Mat">pl_Mat</a> *Material: the material of the 
+                face.
+            <li><a href="#pl_sInt32">pl_sInt32</a> Scrx[3], Scry[3]: the 
+                projected screen coordinates of the vertices, in 16.16 fixed
+                point.
+            <li><a href="#pl_Float">pl_Float</a> Scrz[3]:
+                the reciprocal of the transformed Z of the vertices.
+            <li><a href="#pl_sInt32">pl_sInt32</a> MappingU[3], MappingV[3]:
+                the 16.16 fixed point mapping coordinates of the face
+            <li><a href="#pl_sInt32">pl_sInt32</a> eMappingU[3], eMappingV[3]:
+                the 16.16 fixed point environment mapping coordinates 
+                of the face (generated on the fly)
+            <li><a href="#pl_Float">pl_Float</a> fShade:
+                the shade of the face (for flat shading), 0.0->1.0
+            <li><a href="#pl_Float">pl_Float</a> sLighting:
+                the static lighting value for flat shading, usually 0.0
+            <li><a href="#pl_Float">pl_Float</a> Shades[3]:
+                the shades of the vertices (for Gouraud shading), 0.0->1.0
+            <li><a href="#pl_Float">pl_Float</a> vsLighting[3]:
+                the static lighting values for Gouraud shading, usually 0.0
+          </ul>
+        </td></tr>
+        <tr><td><a name="pl_Mat">pl_Mat</td><td>
+          Material Type. Used with <a href="#pl_Face">pl_Face</a>. See 
+          <a href="#MatFunc">plMat*()</a> Contents:<ul>
+            <li><a href="#pl_sInt">pl_sInt</a> Ambient[3]:
+                RGB of surface color (0-255 is a good range) 
+            <li><a href="#pl_sInt">pl_sInt</a> Diffuse[3]:
+                RGB of diffuse reflection (0-255 is a good range)
+            <li><a href="#pl_sInt">pl_sInt</a> Specular[3]:
+                RGB of "specular" highlights (0-255 is a good range)
+            <li><a href="#pl_uInt">pl_uInt</a> Shininess:
+                Shininess of material. 1 is dullest, 2 is shinier, etc.
+            <li><a href="#pl_Float">pl_Float</a> FadeDist:
+                For distance shading, distance at which intensity is 0
+            <li><a href="#pl_uChar">pl_uChar</a> ShadeType:
+                Shade type: <a href="#PL_SHADE_">PL_SHADE_*</a>
+            <li><a href="#pl_uChar">pl_uChar</a> Transparent:
+                Transparency index (0 = none, 4 = alot)
+                Note: transparencies disable textures 
+            <li><a href="#pl_uChar">pl_uChar</a> PerspectiveCorrect:
+                Correct textures every n pixels. Will be rounded down to the 
+                nearest power of two. i.e. 20 will become 16. Values over 64
+                will become 64.
+            <li><a href="#pl_Texture">pl_Texture</a> *Texture:
+                Texture map, or NULL if none.
+            <li><a href="#pl_Texture">pl_Texture</a> *Environment:
+                Environment map, or NULL if none. Note: if both Texture and 
+                Environment are set, shading will be disabled.
+            <li><a href="#pl_Float">pl_Float</a> TexScaling: 
+                Texture map scaling (usually 1.0)
+            <li><a href="#pl_Float">pl_Float</a> EnvScaling: 
+                Environment map scaling (usually 1.0)
+            <li><a href="#pl_Bool">pl_Bool</a> zBufferable:
+                Can this material be zbuffered? Usually true.
+            <li><a href="#pl_uInt">pl_uInt</a> NumGradients:
+                Desired number of gradients to be used 
+            <li>_*: Internal variables (see pl_types.h for more info)
+          </ul>
+        </td></tr>
+        <tr><td><a name="pl_Texture">pl_Texture</td><td>
+          Texture Type. Used with <a href="#pl_Mat">pl_Mat</a>. See 
+          <a href="#TexFuncs">plTex*()</a>. Contents:<ul>
+            <li><a href="#pl_uChar">pl_uChar</a> *Data: the texture data, one
+               byte per pixel.
+            <li><a href="#pl_uChar">pl_uChar</a> *PaletteData: the palette data,
+               256 RGB triplets. Each value should be 0-255.
+            <li><a href="#pl_uChar">pl_uChar</a> Width, Height: the log2 of 
+               dimensions. i.e. 8, 8 for a 256x256 texture.
+            <li><a href="#pl_uInt">pl_uInt</a> iWidth, iHeight: the actual 
+               dimensions. i.e. 256,256 for a 256x256 texture.
+            <li><a href="#pl_Float">pl_Float</a> uScale, vScale: the texture
+               scaling, usually 1.0, 1.0
+            <li><a href="#pl_uInt">pl_uInt</a> NumColors: the number of colors
+               used in the texture.
+          </ul>
+        </td></tr>
+        <tr><td><a name="pl_Spline">pl_Spline</td><td>
+          Spline Type. See <a href="#SplineFuncs">plSpline*()</a>. Contents:<ul>
+            <li><a href="#pl_Float">pl_Float</a> *keys:
+               the key data, keyWidth*numKeys plFloats.
+            <li><a href="#pl_sInt">pl_sInt</a> keyWidth: number of pl_Floats
+               per key. 
+            <li><a href="#pl_sInt">pl_sInt</a> numKeys: number of keys in spline
+            <li><a href="#pl_Float">pl_Float</a> cont: The continuity of the 
+               spline. Should be between -1.0 and 1.0.
+            <li><a href="#pl_Float">pl_Float</a> bias: The bias of the 
+               spline. Should be between -1.0 and 1.0.
+            <li><a href="#pl_Float">pl_Float</a> tens: The tension of the 
+               spline. Should be between -1.0 and 1.0.
+          </ul>
+        </td></tr>
+      </table>
+    </ul>
+  </body>
+</html>

@@ -3,6 +3,7 @@ Plush Version 1.1
 putface.h
 Triangle Vertex Sorting Code for pf_*.c
 All code copyright (c) 1996-1997, Justin Frankel
+Free for non-commercial use. See license.txt for more information.
 ******************************************************************************/
 
 #ifndef _PUTFACE_H_

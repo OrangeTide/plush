@@ -3,6 +3,7 @@ Plush Version 1.1
 read_cob.c
 ASCII COB Object Reader
 All code copyright (c) 1996-1997, Justin Frankel
+Free for non-commercial use. See license.txt for more information.
 ******************************************************************************/
 
 #include "plush.h"

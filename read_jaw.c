@@ -3,6 +3,7 @@ Plush Version 1.1
 read_jaw.c
 Jaw3D Object Reader
 All code copyright (c) 1996-1997, Justin Frankel
+Free for non-commercial use. See license.txt for more information.
 *******************************************************************************
  Notes on .JAW files:
    This is a file format created by Jawed Karim for Jaw3D 

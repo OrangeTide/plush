@@ -3,6 +3,7 @@ Plush Version 1.1
 pf_ptex.c
 Perspective Correct Texture Mapping Rasterizers
 All code copyright (c) 1996-1997, Justin Frankel
+Free for non-commercial use. See license.txt for more information.
 ******************************************************************************/
 
 #include "plush.h"
