@@ -26,6 +26,7 @@ extern "C" {
 
 extern char plVersionString[];      /* Version string */
 extern char plCopyrightString[];    /* Copyright string */
+extern pl_uChar plText_DefaultFont[256*16]; /* Default 8x16 font for plText* */
 
 /******************************************************************************
 ** Material Functions (mat.c)
@@ -522,6 +523,7 @@ void plMatrixRotate(pl_Float matrix[], pl_uChar m, pl_Float Deg);
   plMatrixTranslate() generates a translation matrix
   Parameters:
     m: the matrix (see plMatrixRotate for more info)
+    x,y,z: the translation coordinates
   Returns:
     nothing
 */

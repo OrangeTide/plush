@@ -2,7 +2,7 @@
 # Makes ..\plush_wc.lib
 
 CC=wcc386
-CFLAGS=-7 -fpi87 -fp5 -oil+mrt -s -zq
+CFLAGS=-fpi87 -fp5 -7 -oil+mrt -s -zq -bt=win32
 
 default: ..\plush_wc.lib
 

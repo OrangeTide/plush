@@ -77,12 +77,14 @@ void plMatInit(pl_Mat *m) {
 static void _plMatSetupTransparent(pl_Mat *m, pl_uChar *pal) {
   pl_uInt x, intensity;
   if (!m->Transparent) return;
-  for (x = 0; x < 256; x ++) {
+  for (x = 0; x < 8; x ++) m->_AddTable[x] = 0;
+  for (x = 8; x < 256+8; x ++) {
     intensity = *pal++;
     intensity += *pal++;
     intensity += *pal++;
     m->_AddTable[x] = ((intensity*(m->_ColorsUsed-m->_tsfact))/768); 
   }
+  for (x = 256+8; x < 256+16; x ++) m->_AddTable[x] = m->_AddTable[x-1];
 }
 
 void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_uChar pstart, pl_uChar pend) {

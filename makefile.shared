@@ -6,19 +6,20 @@ AR = ar
 # C compiler
 CC=gcc
 # Debug options
-CFLAGS = -s
+CFLAGS = -g
 # Warning options
-CFLAGS += -Wall -Wno-sign-compare
+CFLAGS += -Wall
 
 # Don't use when doing PL_i386_GCC
 CFLAGS += -ansi -pedantic
 
 # Normal optimization flags
-CFLAGS += -O4 -mpentium -frisc
+CFLAGS += -O3 -m486
 # Additional optimization flags
 # good to use
 CFLAGS += -fomit-frame-pointer
 CFLAGS += -ffast-math
+CFLAGS += -fPIC
 # Probably blows the cache on 486s, but is good for iP5's...
 CFLAGS += -funroll-loops
 #CFLAGS += -S
@@ -56,6 +57,7 @@ RAST = pf_solid.o pf_trans.o pf_tex.o pf_ptex.o
 	$(AR) r ../libplush.a $(OBJECT1)
 	$(AR) r ../libplush.a $(RAST)
 	ranlib ../libplush.a
+	gcc -shared -o ../libplush.so $(OBJECT0) $(OBJECT1) $(RAST)
 
 clean:
 	-rm $(OBJECT0) 
