@@ -1,13 +1,13 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 pf_tex.c
 Affine Texture Mapping Rasterizers
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
 #include "putface.h"
+
 
 void plPF_TexEnv(pl_Cam *cam, pl_Face *TriFace) {
   pl_uChar i0, i1, i2;
@@ -43,7 +43,7 @@ void plPF_TexEnv(pl_Cam *cam, pl_Face *TriFace) {
   if (!Texture || !Environment) return;
   texture = Texture->Data;
   environment = Environment->Data;
-  addtable = TriFace->Material->_AddTable+8;
+  addtable = TriFace->Material->_AddTable;
   remap = TriFace->Material->_ReMapTable;
 
   MappingV_AND = ((1<<Texture->Height)-1)<<Texture->Width;
@@ -53,7 +53,14 @@ void plPF_TexEnv(pl_Cam *cam, pl_Face *TriFace) {
   eMappingU_AND = (1<<Environment->Width)-1;
   evshift = 16 - Environment->Width;
 
-  PUTFACE_SORT_TEXENV();
+  PUTFACE_SORT_TEX();
+
+  eMappingU1=(pl_sInt32) (TriFace->eMappingU[i0]*Environment->uScale*TriFace->Material->EnvScaling);
+  eMappingV1=(pl_sInt32) (TriFace->eMappingV[i0]*Environment->vScale*TriFace->Material->EnvScaling);
+  eMappingU2=(pl_sInt32) (TriFace->eMappingU[i1]*Environment->uScale*TriFace->Material->EnvScaling);
+  eMappingV2=(pl_sInt32) (TriFace->eMappingV[i1]*Environment->vScale*TriFace->Material->EnvScaling);
+  eMappingU3=(pl_sInt32) (TriFace->eMappingU[i2]*Environment->uScale*TriFace->Material->EnvScaling);
+  eMappingV3=(pl_sInt32) (TriFace->eMappingV[i2]*Environment->vScale*TriFace->Material->EnvScaling);
 
   U1 = U2 = MappingU1;
   V1 = V2 = MappingV1;
@@ -222,7 +229,7 @@ void plPF_TexF(pl_Cam *cam, pl_Face *TriFace) {
   pl_sInt32 MappingU_AND, MappingV_AND;
   pl_uChar *texture;
   pl_uChar vshift;
-  pl_uInt16 bc;
+  pl_uInt bc;
   pl_uChar *remap;
   pl_Texture *Texture;
   pl_uChar stat;
@@ -233,13 +240,21 @@ void plPF_TexF(pl_Cam *cam, pl_Face *TriFace) {
   pl_sInt32 X1, X2, dX1=0, dX2=0, XL1, XL2;
   pl_sInt32 Y1, Y2, Y0, dY;
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
+  pl_sInt shade;
 
   if (TriFace->Material->Environment) Texture = TriFace->Material->Environment;
   else Texture = TriFace->Material->Texture;
 
   if (!Texture) return;
   remap = TriFace->Material->_ReMapTable;
-  bc = TriFace->Material->_AddTable[8+(pl_uInt)(TriFace->fShade*255.0)];
+  if (TriFace->Material->_AddTable)
+  {
+    shade=(pl_sInt)(TriFace->fShade*255.0f);
+    if (shade < 0) shade=0;
+    if (shade > 255) shade=255;
+    bc = TriFace->Material->_AddTable[shade];
+  }
+  else bc=0;
   texture = Texture->Data;
   vshift = 16 - Texture->Width;
   MappingV_AND = ((1<<Texture->Height)-1)<<Texture->Width;
@@ -407,7 +422,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
   if (!Texture) return;
   remap = TriFace->Material->_ReMapTable;
   texture = Texture->Data;
-  addtable = TriFace->Material->_AddTable+8;
+  addtable = TriFace->Material->_AddTable;
   vshift = 16 - Texture->Width;
   MappingV_AND = ((1<<Texture->Height)-1)<<Texture->Width;
   MappingU_AND = (1<<Texture->Width)-1;
@@ -418,7 +433,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
     PUTFACE_SORT_TEX();
   }
 
-  C1 = C2 = TriFace->Shades[i0]*65535.0;
+  C1 = C2 = TriFace->Shades[i0]*65535.0f;
   U1 = U2 = MappingU1;
   V1 = V2 = MappingV1;
   X2 = X1 = TriFace->Scrx[i0];
@@ -431,7 +446,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
   if (dY) {
     dX2 = (TriFace->Scrx[i2] - X1) / dY;
     dZ2 = (TriFace->Scrz[i2] - Z1) / dY;
-    dC2 = (TriFace->Shades[i2]*65535.0 - C1) / dY;
+    dC2 = (TriFace->Shades[i2]*65535.0f - C1) / dY;
     dU2 = (MappingU3 - U1) / dY;
     dV2 = (MappingV3 - V1) / dY;
   }
@@ -439,7 +454,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
   if (dY) {
     dX1 = (TriFace->Scrx[i1] - X1) / dY;
     dZ1 = (TriFace->Scrz[i1] - Z1) / dY;
-    dC1 = (TriFace->Shades[i1]*65535.0 - C1) / dY;
+    dC1 = (TriFace->Shades[i1]*65535.0f - C1) / dY;
     dU1 = (MappingU2 - U1) / dY;
     dV1 = (MappingV2 - V1) / dY;
     if (dX2 < dX1) {
@@ -454,14 +469,14 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
     if (TriFace->Scrx[i1] > X1) {
       X2 = TriFace->Scrx[i1];
       Z2 = TriFace->Scrz[i1];
-      C2 = TriFace->Shades[i1]*65535.0;
+      C2 = TriFace->Shades[i1]*65535.0f;
       U2 = MappingU2;
       V2 = MappingV2;
       stat = 2|4;
     } else {
       X1 = TriFace->Scrx[i1];
       Z1 = TriFace->Scrz[i1];
-      C1 = TriFace->Shades[i1]*65535.0;
+      C1 = TriFace->Shades[i1]*65535.0f;
       U1 = MappingU2;
       V1 = MappingV2;
       stat = 1|8;
@@ -509,7 +524,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
         dZ1 = (TriFace->Scrz[i2]-Z1)/dY;
         dV1 = (MappingV3 - V1) / dY;
         dU1 = (MappingU3 - U1) / dY;
-        dC1 = (TriFace->Shades[i2]*65535.0-C1)/dY;
+        dC1 = (TriFace->Shades[i2]*65535.0f-C1)/dY;
       }
     }
     XL1 = (X1+(1<<19))>>20;
@@ -525,8 +540,12 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
       XL1 += XL2;
       if (zb) do {
           if (*zbuf < ZL) {
+            int av;
+            if (CL < 0) av=addtable[0];
+            else if (CL > (255<<8)) av=addtable[255];
+            else av=addtable[CL>>8];
             *zbuf = ZL;
-            *gmem = remap[addtable[CL>>8] +
+            *gmem = remap[av +
                             texture[((UL>>16)&MappingU_AND) +
                                     ((VL>>vshift)&MappingV_AND)]];
           }
@@ -538,7 +557,11 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
           VL += dVL;
         } while (--XL2);
       else do {
-          *gmem++ = remap[addtable[CL>>8] +
+          int av;
+          if (CL < 0) av=addtable[0];
+          else if (CL > (255<<8)) av=addtable[255];
+          else av=addtable[CL>>8];
+          *gmem++ = remap[av + 
                           texture[((UL>>16)&MappingU_AND) +
                                   ((VL>>vshift)&MappingV_AND)]];
           CL += dCL;

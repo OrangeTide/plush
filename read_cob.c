@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 read_cob.c
 ASCII COB Object Reader
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -16,17 +15,17 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
   char temp_string[PL_COB_MAX_LINELENGTH];
   float TransMatrix[4][4];
   pl_Obj *obj;
-  pl_uInt32 x,i2;
+  pl_sInt32 x,i2;
   long int numVertices, numMappingVertices, numFaces, i;
   pl_sInt32 *MappingVertices = 0;
   if (!fp) return 0;
 
   fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  if (strncmp("Caligari",temp_string,8)) { fclose(fp); return 0; }
+  if (memcmp("Caligari",temp_string,8)) { fclose(fp); return 0; }
 
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  } while (!feof(fp) && strncmp("Transform",temp_string,9));
+  } while (!feof(fp) && memcmp("Transform",temp_string,9));
   if (feof(fp)) { fclose(fp); return 0; }
   fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
   sscanf(temp_string,"%f %f %f %f",
@@ -43,14 +42,14 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
 
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  } while (!feof(fp) && strncmp("World Vertices",temp_string,12));
+  } while (!feof(fp) && memcmp("World Vertices",temp_string,12));
   if (feof(fp) ||  sscanf(temp_string,"World Vertices %ld",&numVertices) != 1)
     { fclose(fp); return 0; }
 
   rewind(fp);
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  } while (!feof(fp) && strncmp("Texture Vertices",temp_string,16));
+  } while (!feof(fp) && memcmp("Texture Vertices",temp_string,16));
   if (feof(fp) ||
       sscanf(temp_string,"Texture Vertices %ld",&numMappingVertices) != 1) {
     fclose(fp); return 0;
@@ -59,7 +58,7 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
   rewind(fp);
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  } while (!feof(fp) && strncmp("Faces",temp_string,5));
+  } while (!feof(fp) && memcmp("Faces",temp_string,5));
   if (feof(fp) || sscanf(temp_string,"Faces %ld",&numFaces) != 1) {
     fclose(fp); return 0;
   }
@@ -77,7 +76,7 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
   rewind(fp);
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  } while (!feof(fp) && strncmp("World Vertices",temp_string,12));
+  } while (!feof(fp) && memcmp("World Vertices",temp_string,12));
   if (feof(fp)) { plObjDelete(obj); fclose(fp); return 0; }
   for (x = 0; x < numVertices; x ++) {
     float xp, yp, zp;
@@ -96,7 +95,7 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
   rewind(fp);
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  } while (!feof(fp) && strncmp("Texture Vertices",temp_string,16));
+  } while (!feof(fp) && memcmp("Texture Vertices",temp_string,16));
   if (!feof(fp)) {
     MappingVertices = (pl_sInt32 *) 
       malloc(sizeof(pl_sInt32) * numMappingVertices * 2);
@@ -115,7 +114,7 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
   rewind(fp);
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
-  } while (!feof(fp) && strncmp("Faces",temp_string,5));
+  } while (!feof(fp) && memcmp("Faces",temp_string,5));
   if (feof(fp)) { 
     if (MappingVertices) free(MappingVertices); 
     plObjDelete(obj); fclose(fp); return 0; 

@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 spline.c
 n-th Dimensional Spline Interpolator
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"

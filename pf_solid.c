@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 pf_solid.c
 Solid Rasterizers
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -20,10 +19,15 @@ void plPF_SolidF(pl_Cam *cam, pl_Face *TriFace) {
   pl_sInt32 Y1, Y2, Y0, dY;
   pl_uChar stat;
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
-  pl_uChar bc = TriFace->Material->_ReMapTable[(pl_uInt)(TriFace->fShade*
-                                        (TriFace->Material->_ColorsUsed-1))];
+  pl_uChar bc;
+  pl_sInt32 shade;
 
   PUTFACE_SORT();
+
+  shade=(pl_sInt32) (TriFace->fShade*(TriFace->Material->_ColorsUsed-1));
+  if (shade < 0) shade=0;
+  if (shade > (pl_sInt32) TriFace->Material->_ColorsUsed-1) shade=TriFace->Material->_ColorsUsed-1;
+  bc=TriFace->Material->_ReMapTable[shade];
 
   X2 = X1 = TriFace->Scrx[i0];
   Z1 = TriFace->Scrz[i0];
@@ -137,9 +141,12 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
   pl_uChar stat;
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
 
-  pl_Float nc = (TriFace->Material->_ColorsUsed-1)*65535.0;
+  pl_Float nc = (TriFace->Material->_ColorsUsed-1)*65536.0f;
+  pl_sInt32 maxColor=((TriFace->Material->_ColorsUsed-1)<<16);
+  pl_sInt32 maxColorNonShift=TriFace->Material->_ColorsUsed-1;
 
   PUTFACE_SORT();
+
   
   C1 = (pl_sInt32) (TriFace->Shades[i0]*nc);
   C2 = (pl_sInt32) (TriFace->Shades[i1]*nc);
@@ -177,9 +184,9 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
       X2 = TriFace->Scrx[i1];
       stat = 2|4;
     } else {
-      X1 = TriFace->Scrx[i1];
+      X1 = C1; C1 = C2; C2 = X1;
       ZL = Z1; Z1 = Z2; Z2 = ZL;
-      ZL = C1; C1 = C2; C2 = ZL;
+      X1 = TriFace->Scrx[i1];
       stat = 1|8;
     }
   } 
@@ -235,7 +242,9 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
       if (zb) do {
           if (*zbuf < ZL) {
             *zbuf = ZL;
-            *gmem = remap[CL>>16];
+            if (CL >= maxColor) *gmem=remap[maxColorNonShift];
+            else if (CL > 0) *gmem = remap[CL>>16];
+            else *gmem = remap[0];                    
           }
           gmem++;
           zbuf++;
@@ -243,7 +252,9 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
           CL += dCL;
         } while (--XL2);
       else do {
-          *gmem++ = remap[CL>>16];
+          if (CL >= maxColor) *gmem++=remap[maxColorNonShift];
+          else if (CL > 0) *gmem++ = remap[CL>>16];
+          else *gmem++ = remap[0];                    
           CL += dCL;
         } while (--XL2);
       gmem -= XL1;

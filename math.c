@@ -1,24 +1,23 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 math.c
 Math and Matrix Control
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
 
 void plMatrixRotate(pl_Float matrix[], pl_uChar m, pl_Float Deg) {
   pl_uChar m1, m2;
-  pl_Float c,s;
-  Deg *= PL_PI / 180.0;
+  double c,s;
+  double d= Deg * PL_PI / 180.0;
   memset(matrix,0,sizeof(pl_Float)*16);
   matrix[((m-1)<<2)+m-1] = matrix[15] = 1.0;
   m1 = (m % 3);
   m2 = ((m1+1) % 3);
-  c = cos(Deg); s = sin(Deg);
-  matrix[(m1<<2)+m1]=c; matrix[(m1<<2)+m2]=s;
-  matrix[(m2<<2)+m2]=c; matrix[(m2<<2)+m1]=-s;
+  c = cos(d); s = sin(d);
+  matrix[(m1<<2)+m1]=(pl_Float)c; matrix[(m1<<2)+m2]=(pl_Float)s;
+  matrix[(m2<<2)+m2]=(pl_Float)c; matrix[(m2<<2)+m1]=(pl_Float)-s;
 }
 
 void plMatrixTranslate(pl_Float m[], pl_Float x, pl_Float y, pl_Float z) {
@@ -56,13 +55,13 @@ pl_Float plDotProduct(pl_Float x1, pl_Float y1, pl_Float z1,
 }
 
 void plNormalizeVector(pl_Float *x, pl_Float *y, pl_Float *z) {
-  pl_Float length;
+  double length;
   length = (*x)*(*x)+(*y)*(*y)+(*z)*(*z);
   if (length > 0.0000000001) {
-    length = sqrt(length);
-    *x /= length;
-    *y /= length;
-    *z /= length;
+    pl_Float t = (pl_Float)sqrt(length);
+    *x /= t;
+    *y /= t;
+    *z /= t;
   } else *x = *y = *z = 0.0;
 }
 

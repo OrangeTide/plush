@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 pf_ptex.c
 Perspective Correct Texture Mapping Rasterizers
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -21,8 +20,10 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
   pl_uChar vshift;
   pl_uInt16 bc;
   pl_Texture *Texture;
+  pl_sInt32 iShade;
 
-  pl_uChar n, nm, nmb;
+  pl_uChar nm, nmb;
+  pl_sInt n;
   pl_Float U1,V1,U2,V2,dU1=0,dU2=0,dV1=0,dV2=0,dUL=0,dVL=0,UL,VL;
   pl_sInt32 iUL, iVL, idUL=0, idVL=0, iULnext, iVLnext;
 
@@ -39,7 +40,12 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
 
   if (!Texture) return;
   texture = Texture->Data;
-  bc = TriFace->Material->_AddTable[8 + (pl_uInt)(TriFace->fShade*256.0)];
+  iShade = (pl_sInt32)(TriFace->fShade*256.0);
+  if (iShade < 0) iShade=0;
+  if (iShade > 255) iShade=255;
+
+  if (!TriFace->Material->_AddTable) bc=0;
+  else bc = TriFace->Material->_AddTable[iShade];
   nm = TriFace->Material->PerspectiveCorrect;
   nmb = 0; while (nm) { nmb++; nm >>= 1; }
   nmb = plMin(6,nmb);
@@ -54,12 +60,12 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
     PUTFACE_SORT_TEX();
   }
 
-  MappingU1 *= TriFace->Scrz[i0]/65536.0;
-  MappingV1 *= TriFace->Scrz[i0]/65536.0;
-  MappingU2 *= TriFace->Scrz[i1]/65536.0;
-  MappingV2 *= TriFace->Scrz[i1]/65536.0;
-  MappingU3 *= TriFace->Scrz[i2]/65536.0;
-  MappingV3 *= TriFace->Scrz[i2]/65536.0;
+  MappingU1 *= TriFace->Scrz[i0]/65536.0f;
+  MappingV1 *= TriFace->Scrz[i0]/65536.0f;
+  MappingU2 *= TriFace->Scrz[i1]/65536.0f;
+  MappingV2 *= TriFace->Scrz[i1]/65536.0f;
+  MappingU3 *= TriFace->Scrz[i2]/65536.0f;
+  MappingV3 *= TriFace->Scrz[i2]/65536.0f;
 
   U1 = U2 = MappingU1;
   V1 = V2 = MappingV1;
@@ -161,7 +167,7 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
       gmem += XL1;
       zbuf += XL1;
       XL1 += Xlen-scrwidth;
-      t = 65536.0/ZL;
+      t = 65536.0f/ZL;
       iUL = iULnext = ((pl_sInt32) (UL*t));
       iVL = iVLnext = ((pl_sInt32) (VL*t));
       do {
@@ -170,7 +176,7 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
         iUL = iULnext;
         iVL = iVLnext;
         pZL += pdZL;
-        t = 65536.0/pZL;
+        t = 65536.0f/pZL;
         iULnext = ((pl_sInt32) (UL*t));
         iVLnext = ((pl_sInt32) (VL*t));
         idUL = (iULnext - iUL)>>nmb;
@@ -220,7 +226,8 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
   pl_Texture *Texture;
   pl_Bool zb = (cam->zBuffer&&TriFace->Material->zBufferable) ? 1 : 0;
 
-  pl_uChar n, nm, nmb;
+  pl_uChar nm, nmb;
+  pl_uInt n;
   pl_sInt32 MappingU_AND, MappingV_AND;
   pl_uChar vshift;
   pl_uChar *texture;
@@ -250,7 +257,9 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
 
   if (!Texture) return;
   texture = Texture->Data;
-  addtable = TriFace->Material->_AddTable+8;
+  addtable = TriFace->Material->_AddTable;
+  if (!addtable) return;
+
   nm = TriFace->Material->PerspectiveCorrect;
   nmb = 0; while (nm) { nmb++; nm >>= 1; }
   nmb = plMin(6,nmb);
@@ -265,17 +274,17 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
     PUTFACE_SORT_TEX();
   }
 
-  MappingU1 *= TriFace->Scrz[i0]/65536.0;
-  MappingV1 *= TriFace->Scrz[i0]/65536.0;
-  MappingU2 *= TriFace->Scrz[i1]/65536.0;
-  MappingV2 *= TriFace->Scrz[i1]/65536.0;
-  MappingU3 *= TriFace->Scrz[i2]/65536.0;
-  MappingV3 *= TriFace->Scrz[i2]/65536.0;
-  TriFace->Shades[0] *= 65536.0;
-  TriFace->Shades[1] *= 65536.0;
-  TriFace->Shades[2] *= 65536.0;
+  MappingU1 *= TriFace->Scrz[i0]/65536.0f;
+  MappingV1 *= TriFace->Scrz[i0]/65536.0f;
+  MappingU2 *= TriFace->Scrz[i1]/65536.0f;
+  MappingV2 *= TriFace->Scrz[i1]/65536.0f;
+  MappingU3 *= TriFace->Scrz[i2]/65536.0f;
+  MappingV3 *= TriFace->Scrz[i2]/65536.0f;
+  TriFace->Shades[0] *= 65536.0f;
+  TriFace->Shades[1] *= 65536.0f;
+  TriFace->Shades[2] *= 65536.0f;
 
-  C1 = C2 = TriFace->Shades[i0];
+  C1 = C2 = (pl_sInt32) TriFace->Shades[i0];
   U1 = U2 = MappingU1;
   V1 = V2 = MappingV1;
   X2 = X1 = TriFace->Scrx[i0];
@@ -288,7 +297,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
   if (dY) {
     dX2 = (TriFace->Scrx[i2] - X1) / dY;
     dZ2 = (TriFace->Scrz[i2] - Z1) / dY;
-    dC2 = (TriFace->Shades[i2] - C1) / dY;
+    dC2 = (pl_sInt32) ((TriFace->Shades[i2] - C1) / dY);
     dU2 = (MappingU3 - U1) / dY;
     dV2 = (MappingV3 - V1) / dY;
   }
@@ -296,7 +305,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
   if (dY) {
     dX1 = (TriFace->Scrx[i1] - X1) / dY;
     dZ1 = (TriFace->Scrz[i1] - Z1) / dY;
-    dC1 = (TriFace->Shades[i1] - C1) / dY;
+    dC1 = (pl_sInt32) ((TriFace->Shades[i1] - C1) / dY);
     dU1 = (MappingU2 - U1) / dY;
     dV1 = (MappingV2 - V1) / dY;
     if (dX2 < dX1) {
@@ -311,14 +320,14 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
     if (TriFace->Scrx[i1] > X1) {
       X2 = TriFace->Scrx[i1];
       Z2 = TriFace->Scrz[i1];
-      C2 = TriFace->Shades[i1];
+      C2 = (pl_sInt32)TriFace->Shades[i1];
       U2 = MappingU2;
       V2 = MappingV2;
       stat = 2|4;
     } else {
       X1 = TriFace->Scrx[i1];
       Z1 = TriFace->Scrz[i1];
-      C1 = TriFace->Shades[i1];
+      C1 = (pl_sInt32)TriFace->Shades[i1];
       U1 = MappingU2;
       V1 = MappingV2;
       stat = 1|8;
@@ -370,7 +379,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
           dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
         }
         dZ1 = (TriFace->Scrz[i2]-Z1)/dY;
-        dC1 = (TriFace->Shades[i2]-C1)/dY;
+        dC1 = (pl_sInt32)((TriFace->Shades[i2]-C1)/dY);
         dV1 = (MappingV3 - V1) / dY;
         dU1 = (MappingU3 - U1) / dY;
       }
@@ -386,7 +395,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
       gmem += XL1;
       zbuf += XL1;
       XL1 += Xlen-scrwidth;
-      t = 65536.0 / ZL;     
+      t = 65536.0f / ZL;     
       iUL = iULnext = ((pl_sInt32) (UL*t));
       iVL = iVLnext = ((pl_sInt32) (VL*t));
       do {
@@ -395,7 +404,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
         iUL = iULnext;
         iVL = iVLnext;
         pZL += pdZL;
-        t = 65536.0/pZL;
+        t = 65536.0f/pZL;
         iULnext = ((pl_sInt32) (UL*t));
         iVLnext = ((pl_sInt32) (VL*t));
         idUL = (iULnext - iUL)>>nmb;
@@ -405,8 +414,12 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
         if (Xlen < 0) n += Xlen;
         if (zb) do {
             if (*zbuf < ZL) {
+              int av;
+              if (CL < 0) av=addtable[0];
+              else if (CL > (255<<8)) av=addtable[255];
+              else av=addtable[CL>>8];
               *zbuf = ZL;
-              *gmem = remap[addtable[CL>>8] +
+              *gmem = remap[av +
                       texture[((iUL>>16)&MappingU_AND) +
                               ((iVL>>vshift)&MappingV_AND)]];
             }
@@ -418,7 +431,11 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
             iVL += idVL;
           } while (--n);
         else do {
-            *gmem++ = remap[addtable[CL>>8] +
+            int av;
+            if (CL < 0) av=addtable[0];
+            else if (CL > (255<<8)) av=addtable[255];
+            else av=addtable[CL>>8];
+            *gmem++ = remap[av +
                       texture[((iUL>>16)&MappingU_AND) +
                               ((iVL>>vshift)&MappingV_AND)]];
             CL += dCL;

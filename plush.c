@@ -1,16 +1,11 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 plush.c
 Misc code and data
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
-
-char plVersionString[] = "Plush 3D Version 1.1.3";
-char plCopyrightString[] = 
-  "Copyright (C) 1996-1997, Justin Frankel and Nullsoft";
 
 pl_uChar plText_DefaultFont[256*16] = {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
@@ -273,9 +268,6 @@ pl_uChar plText_DefaultFont[256*16] = {
 
 /* Can't find another place to put this... */
 void plTexDelete(pl_Texture *t) {
-  char *plInternalString = 
-        "Jasduasdsasdtasdiasdnasd asdwasdaasdsasd asdhasdeasdrasde";
-  plInternalString++;
   if (t) {
     if (t->Data) free(t->Data);
     if (t->PaletteData) free(t->PaletteData);

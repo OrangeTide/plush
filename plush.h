@@ -1,7 +1,7 @@
 /******************************************************************************
   plush.h
-  PLUSH 3D VERSION 1.1 MAIN HEADER
-  Copyright (c) 1996-1998 Justin Frankel
+  PLUSH 3D VERSION 1.2 MAIN HEADER
+  Copyright (c) 1996-2000 Justin Frankel
   Copyright (c) 1998-2000 Nullsoft, Inc.
 
   For more information on Plush and the latest updates, please visit
@@ -31,10 +31,9 @@
 #ifndef _PLUSH_H_
 #define _PLUSH_H_
 
-#include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #include "pl_conf.h"
@@ -45,8 +44,6 @@
 extern "C" {
 #endif
 
-extern char plVersionString[];      /* Version string */
-extern char plCopyrightString[];    /* Copyright string */
 extern pl_uChar plText_DefaultFont[256*16]; /* Default 8x16 font for plText* */
 extern pl_uInt32 plRender_TriStats[4]; /* Three different triangle counts from 
                                           the last plRender() block:
@@ -104,42 +101,23 @@ void plMatInit(pl_Mat *m);
     Mapping a material with > 2000 colors can take up to a second or two. 
       Be careful, and go easy on plMat.NumGradients ;)
 */
-void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_uChar pstart, pl_uChar pend);
+void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_sInt pstart, pl_sInt pend);
+
 
 /*
-  plMatMakeOptPal() makes an optimal palette from materials created with 
-    plMatCreate() and initialized with plMatInit().
-  Paramters:
-    p: palette to create
-    pstart: first color entry to use
-    pend: last color entry to use
-    materials: a null terminated array of materials to generate the palette from
-  Returns:
-    nothing
-  Notes: this generates what is probably the best palette. It is O(N)=N^3,
-         so it is really really slow. You probably want to either use 
-         plMatMakeOptPal2(), or just use this and store the nice palette to 
-         disk since this is soo slow.
-*/
-void plMatMakeOptPal(pl_uChar *p, pl_uChar pstart, 
-                     pl_uChar pend, pl_Mat **materials);
-
-/*
-  plMatMakeOptPal2() makes an almost optimal palette from materials 
+  plMatMakeOptPal() makes an almost optimal palette from materials 
     created with plMatCreate() and initialized with plMatInit().
   Paramters:
     p: palette to create
     pstart: first color entry to use
     pend: last color entry to use
-    materials: a null terminated array of materials to generate the palette from
+    materials: an array of pointers to materials to generate the palette from
+    nmats: number of materials
   Returns:
     nothing
-  Notes: this one uses a different algorithm, which is O(N)=N^2, so it is 
-         reasonably fast (i.e. 6000->256 colors in < 5 seconds on a P133)
 */
-void plMatMakeOptPal2(pl_uChar *p, pl_uChar pstart, 
-                     pl_uChar pend, pl_Mat **materials);
-
+void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart, 
+                     pl_sInt pend, pl_Mat **materials, pl_sInt nmats);
 
 
 /******************************************************************************
@@ -271,16 +249,6 @@ void plClipSetFrustum(pl_Cam *cam);
   Notes: this is used internally by plRender*(), so be careful. Kinda slow too.
 */
 void plClipRenderFace(pl_Face *face);
-
-/*
-  plClipRenderFaceNC() renders a face and does no clipping
-  Parameters:
-    face: the face to render
-  Returns:
-    nothing
-  Notes: this is used internally by plRender*(), so be careful. 
-*/
-void plClipRenderFaceNC(pl_Face *face);
 
 /*
   plClipNeeded() decides whether the face is in the frustum, intersecting 

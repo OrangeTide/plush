@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 obj.c
 Object control
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -140,7 +139,7 @@ void plObjCalcNormals(pl_Obj *obj) {
   pl_uInt32 i;
   pl_Vertex *v = obj->Vertices;
   pl_Face *f = obj->Faces;
-  pl_Float x1, x2, y1, y2, z1, z2;
+  double x1, x2, y1, y2, z1, z2;
   i = obj->NumVertices;
   while (i--) {
     v->nx = 0.0; v->ny = 0.0; v->nz = 0.0;
@@ -154,9 +153,9 @@ void plObjCalcNormals(pl_Obj *obj) {
     y2 = f->Vertices[0]->y-f->Vertices[2]->y;
     z1 = f->Vertices[0]->z-f->Vertices[1]->z;
     z2 = f->Vertices[0]->z-f->Vertices[2]->z;
-    f->nx = y1*z2 - z1*y2;
-    f->ny = z1*x2 - x1*z2;
-    f->nz = x1*y2 - y1*x2;
+    f->nx = (pl_Float) (y1*z2 - z1*y2);
+    f->ny = (pl_Float) (z1*x2 - x1*z2);
+    f->nz = (pl_Float) (x1*y2 - y1*x2);
     plNormalizeVector(&f->nx, &f->ny, &f->nz);
     f->Vertices[0]->nx += f->nx;
     f->Vertices[0]->ny += f->ny;

@@ -1,10 +1,7 @@
 /******************************************************************************
   pl_defs.h
-  PLUSH 3D VERSION 1.1 CONSTANTS DEFINITION HEADER
-  Copyright (c) 1996-1997 Justin Frankel
-  Do not distribute seperately from the rest of the package.
-  For more information on Plush and the latest updates, please visit
-    http://nullsoft.com/plush/
+  PLUSH 3D VERSION 1.2 CONSTANTS DEFINITION HEADER
+  Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #ifndef _PL_DEFS_H_
@@ -49,6 +46,14 @@ extern "C" {
 #define PL_FILL_TEXTURE (0x1)
 #define PL_FILL_ENVIRONMENT (0x2)
 #define PL_FILL_TRANSPARENT (0x4)
+
+#define PL_TEXENV_ADD (0)
+#define PL_TEXENV_MUL (1)
+#define PL_TEXENV_AVG (2)
+#define PL_TEXENV_TEXMINUSENV (3)
+#define PL_TEXENV_ENVMINUSTEX (4)
+#define PL_TEXENV_MIN (5)
+#define PL_TEXENV_MAX (6)
 
 #ifdef __cplusplus
 }

@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 mat.c
 Material Control
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -23,8 +22,8 @@ pl_Mat *plMatCreate() {
   m = (pl_Mat *) malloc(sizeof(pl_Mat));
   if (!m) return 0;
   memset(m,0,sizeof(pl_Mat));
-  m->EnvScaling = 1.0;
-  m->TexScaling = 1.0;
+  m->EnvScaling = 1.0f;
+  m->TexScaling = 1.0f;
   m->Ambient[0] = m->Ambient[1] = m->Ambient[2] = 0;
   m->Diffuse[0] = m->Diffuse[1] = m->Diffuse[2] = 128;
   m->Specular[0] = m->Specular[1] = m->Specular[2] = 128;
@@ -77,23 +76,28 @@ void plMatInit(pl_Mat *m) {
 
 static void _plMatSetupTransparent(pl_Mat *m, pl_uChar *pal) {
   pl_uInt x, intensity;
-  if (!m->Transparent) return;
-  for (x = 0; x < 8; x ++) m->_AddTable[x] = 0;
-  for (x = 8; x < 256+8; x ++) {
-    intensity = *pal++;
-    intensity += *pal++;
-    intensity += *pal++;
-    m->_AddTable[x] = ((intensity*(m->_ColorsUsed-m->_tsfact))/768); 
+  if (m->Transparent) 
+  {
+    if (m->_AddTable) free(m->_AddTable);
+    m->_AddTable = (pl_uInt16 *) malloc(256*sizeof(pl_uInt16));
+    for (x = 0; x < 256; x ++) {
+      intensity = *pal++;
+      intensity += *pal++;
+      intensity += *pal++;
+      m->_AddTable[x] = ((intensity*(m->_ColorsUsed-m->_tsfact))/768); 
+    }
   }
-  for (x = 256+8; x < 256+16; x ++) m->_AddTable[x] = m->_AddTable[x-1];
 }
 
-void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_uChar pstart, pl_uChar pend) {
-  pl_sInt32 i, k, j, r, g, b, bestdiff, bestpos, r2, g2, b2;
+void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_sInt pstart, pl_sInt pend) {
+  pl_sInt32 j, r, g, b, bestdiff, r2, g2, b2;
+  pl_sInt bestpos,k;
+  pl_uInt32 i;
   pl_uChar *p;
+  if (!m->_RequestedColors) plMatInit(m);
+  if (!m->_RequestedColors) return;
   if (m->_ReMapTable) free(m->_ReMapTable);
   m->_ReMapTable = (pl_uChar *) malloc(m->_ColorsUsed);
-  if (!m->_RequestedColors) plMatInit(m);
   for (i = 0; i < m->_ColorsUsed; i ++) {
     bestdiff = 1000000000;
     bestpos = pstart;
@@ -101,7 +105,7 @@ void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_uChar pstart, pl_uChar pend) {
     g = m->_RequestedColors[i*3+1];
     b = m->_RequestedColors[i*3+2];
     p = pal + pstart*3;
-    for (k = pstart; k < pend; k ++) {
+    for (k = pstart; k <= (pl_sInt)pend; k ++) {
       r2 = p[0] - r;
       g2 = p[1] - g;
       b2 = p[2] - b;
@@ -117,86 +121,28 @@ void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_uChar pstart, pl_uChar pend) {
   _plMatSetupTransparent(m,pal);
 }
 
-void plMatMakeOptPal(pl_uChar *p, pl_uChar pstart, 
-                     pl_uChar pend, pl_Mat **materials) {
-  pl_uChar *allColors = 0;
-  pl_uInt numColors = 0;
-  pl_uChar *pal, *pal2;
-  pl_uChar len = pend - pstart;
-  pl_sInt32 i, j = 0, best, bestpos1, bestpos2, r, g, b, x;
-
-  for (x = 0; materials[x]; x ++) {
-    if (!materials[x]->_RequestedColors) plMatInit(materials[x]);
-    allColors = (pl_uChar *) realloc((void *)allColors,
-                             (numColors+materials[x]->_ColorsUsed)*3);
-    memcpy(allColors + (numColors*3), materials[x]->_RequestedColors,
-           materials[x]->_ColorsUsed*3);
-    numColors += materials[x]->_ColorsUsed;
-  }
-
-  while (numColors > len) {
-    best = 1000000000;
-    bestpos1 = 0;
-    bestpos2 = 0;
-    pal2 = allColors;
-    for (i = 0; i < numColors; i ++) {
-      pal = allColors;
-      for (j = 0; j < numColors; j ++) {
-        if (j != i) {
-          r = pal[0]-pal2[0];
-          g = pal[1]-pal2[1];
-          b = pal[2]-pal2[2];
-          x = r*r+b*b+g*g;
-          if (x <= best) {
-            best = x;
-            bestpos1 = i;
-            bestpos2 = j;
-          }
-        } 
-        pal += 3;
-      }
-      pal2 += 3;
-    }
-    i = bestpos1; j = bestpos2;
-    if (j < i) { 
-      i = bestpos2; 
-      j = bestpos1;
-    }
-    numColors--;
-    r = (allColors[j*3]+allColors[i*3])/2;
-    g = (allColors[j*3+1]+allColors[i*3+1])/2;
-    b = (allColors[j*3+2]+allColors[i*3+2])/2;
-    allColors[i*3] = r;
-    allColors[i*3+1] = g;
-    allColors[i*3+2] = b;
-    allColors[j*3] = allColors[numColors*3];
-    allColors[j*3+1] = allColors[numColors*3+1];
-    allColors[j*3+2] = allColors[numColors*3+2];
-  }
-  memcpy(p+pstart*3,allColors,numColors*3);
-  if (allColors) free(allColors);
-}
-
 static void _plGenerateSinglePalette(pl_Mat *m) {
-  pl_uChar *pal;
   m->_ColorsUsed = 1;
   if (m->_RequestedColors) free(m->_RequestedColors);
-  pal = m->_RequestedColors = (pl_uChar *) malloc(m->_ColorsUsed*3);
-  *pal++ = m->Ambient[0];
-  *pal++ = m->Ambient[1];
-  *pal++ = m->Ambient[2];
+  m->_RequestedColors = (pl_uChar *) malloc(3);
+  m->_RequestedColors[0] = plMin(plMax(m->Ambient[0],0),255);
+  m->_RequestedColors[1] = plMin(plMax(m->Ambient[1],0),255);
+  m->_RequestedColors[2] = plMin(plMax(m->Ambient[2],0),255);
 }
 
 static void _plGeneratePhongPalette(pl_Mat *m) {
   pl_uInt i = m->NumGradients, x;
   pl_sInt c;
   pl_uChar *pal;
-  pl_Float a, da, ca, cb;
+  double a, da, ca, cb;
   m->_ColorsUsed = m->NumGradients;
   if (m->_RequestedColors) free(m->_RequestedColors);
   pal =  m->_RequestedColors = (pl_uChar *) malloc(m->_ColorsUsed*3);
   a = PL_PI/2.0;
-  da = -PL_PI/((m->NumGradients-1)<<1);
+
+  if (m->NumGradients > 1) da = -PL_PI/((m->NumGradients-1)<<1);
+  else da=0.0;
+
   do {
     if (m->NumGradients == 1) ca = 1;
     else {
@@ -205,36 +151,80 @@ static void _plGeneratePhongPalette(pl_Mat *m) {
     }
     cb = pow((double) ca, (double) m->Shininess);
     for (x = 0; x < 3; x ++) {
-      c = (cb*m->Specular[x])+(ca*m->Diffuse[x])+m->Ambient[x];
+      c = (pl_sInt) ((cb*m->Specular[x])+(ca*m->Diffuse[x])+m->Ambient[x]);
       *(pal++) = plMax(0,plMin(c,255));
     }
   } while (--i); 
 }
 
 static void _plGenerateTextureEnvPalette(pl_Mat *m) {
-  pl_sInt whichlevel, whichindex, c;
+  pl_sInt c;
+  pl_uInt whichlevel,whichindex;
   pl_uChar *texpal, *envpal, *pal;
   m->_ColorsUsed = m->Texture->NumColors*m->Environment->NumColors;
   if (m->_RequestedColors) free(m->_RequestedColors);
   pal = m->_RequestedColors = (pl_uChar *) malloc(m->_ColorsUsed*3);
   envpal = m->Environment->PaletteData;
   if (m->_AddTable) free(m->_AddTable);
-  m->_AddTable = (pl_uInt16 *) 
-    malloc(m->Environment->NumColors*sizeof(pl_uInt16)+16*sizeof(pl_uInt16));
+  m->_AddTable = (pl_uInt16 *) malloc(m->Environment->NumColors*sizeof(pl_uInt16));
   for (whichlevel = 0; whichlevel < m->Environment->NumColors; whichlevel++) {
     texpal = m->Texture->PaletteData;
-    for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
-      c = (*texpal++) + *(envpal); *pal++ = plMax(0,plMin(255,c));
-      c = (*texpal++) + *(envpal+1); *pal++ = plMax(0,plMin(255,c));
-      c = (*texpal++) + *(envpal+2); *pal++ = plMax(0,plMin(255,c));
+    switch (m->TexEnvMode)
+    {
+      case PL_TEXENV_MUL: // multiply
+        for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) * (pl_sInt) envpal[0])>>8);
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) * (pl_sInt) envpal[1])>>8);
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) * (pl_sInt) envpal[2])>>8);
+        }
+      break;
+      case PL_TEXENV_AVG: // average
+        for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[0])>>1); 
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[1])>>1); 
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[2])>>1); 
+        }
+      break;
+      case PL_TEXENV_TEXMINUSENV: // tex-env
+        for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
+          c = (pl_sInt) (*texpal++) - (pl_sInt) envpal[0]; *pal++ = plMax(0,plMin(255,c));
+          c = (pl_sInt) (*texpal++) - (pl_sInt) envpal[1]; *pal++ = plMax(0,plMin(255,c));
+          c = (pl_sInt) (*texpal++) - (pl_sInt) envpal[2]; *pal++ = plMax(0,plMin(255,c));
+        }
+      break;
+      case PL_TEXENV_ENVMINUSTEX: // env-tex
+        for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
+          c = -(pl_sInt) (*texpal++) - (pl_sInt) envpal[0]; *pal++ = plMax(0,plMin(255,c));
+          c = -(pl_sInt) (*texpal++) - (pl_sInt) envpal[1]; *pal++ = plMax(0,plMin(255,c));
+          c = -(pl_sInt) (*texpal++) - (pl_sInt) envpal[2]; *pal++ = plMax(0,plMin(255,c));
+        }
+      break;
+      case PL_TEXENV_MIN:
+        for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
+          *pal++ = plMin(texpal[0],envpal[0]);
+          *pal++ = plMin(texpal[1],envpal[1]);
+          *pal++ = plMin(texpal[2],envpal[2]);
+          texpal+=3;
+        }
+      break;
+      case PL_TEXENV_MAX:
+      break;
+        for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
+          *pal++ = plMax(texpal[0],envpal[0]);
+          *pal++ = plMax(texpal[1],envpal[1]);
+          *pal++ = plMax(texpal[2],envpal[2]);
+          texpal+=3;
+        }
+      default: // add
+        for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
+          c = (pl_sInt) (*texpal++) + (pl_sInt) envpal[0]; *pal++ = plMax(0,plMin(255,c));
+          c = (pl_sInt) (*texpal++) + (pl_sInt) envpal[1]; *pal++ = plMax(0,plMin(255,c));
+          c = (pl_sInt) (*texpal++) + (pl_sInt) envpal[2]; *pal++ = plMax(0,plMin(255,c));
+        }
+      break;
     }
     envpal += 3;
-    m->_AddTable[whichlevel+8] = whichlevel*m->Texture->NumColors;
-  }
-  for (whichindex = 0; whichindex < 8; whichindex++) {
-	m->_AddTable[whichindex] = m->_AddTable[8];
-	m->_AddTable[m->Environment->NumColors+8+whichindex] = 
-      m->_AddTable[m->Environment->NumColors+7];
+    m->_AddTable[whichlevel] = whichlevel*m->Texture->NumColors;
   }
 }
 
@@ -246,29 +236,31 @@ static void _plGenerateTexturePalette(pl_Mat *m, pl_Texture *t) {
   pal = m->_RequestedColors = (pl_uChar *) malloc(m->_ColorsUsed*3);
   ppal = t->PaletteData;
   i = t->NumColors;
-  if (m->_AddTable) free(m->_AddTable);
-  m->_AddTable = (pl_uInt16 *) malloc(16*sizeof(pl_uInt16));
   do {
     for (x = 0; x < 3; x ++) {
       c = m->Ambient[x] + *ppal++;
       *(pal++) = plMax(0,plMin(c,255));
     }
   } while (--i);
-  memset(m->_AddTable,0,sizeof(pl_uInt16)*16);
 }
 
 static void _plGeneratePhongTexturePalette(pl_Mat *m, pl_Texture *t) {
-  pl_Float a, ca, da, cb;
+  double a, ca, da, cb;
   pl_uInt16 *addtable;
   pl_uChar *ppal, *pal;
   pl_sInt c, i, i2, x;
-  pl_uInt num_shades = (m->NumGradients / t->NumColors);
+  pl_uInt num_shades;
+  
+  if (t->NumColors) num_shades = (m->NumGradients / t->NumColors);
+  else num_shades=1;
+
   if (!num_shades) num_shades = 1;
   m->_ColorsUsed = num_shades*t->NumColors;
   if (m->_RequestedColors) free(m->_RequestedColors);
   pal = m->_RequestedColors = (pl_uChar *) malloc(m->_ColorsUsed*3);
   a = PL_PI/2.0;
-  da = (-PL_PI/2.0)/(num_shades-1);
+  if (num_shades>1) da = (-PL_PI/2.0)/(num_shades-1);
+  else da=0.0;
   i2 = num_shades;
   do {
     ppal = t->PaletteData;
@@ -278,38 +270,30 @@ static void _plGeneratePhongTexturePalette(pl_Mat *m, pl_Texture *t) {
     i = t->NumColors;
     do {
       for (x = 0; x < 3; x ++) {
-        c = (cb*m->Specular[x])+(ca*m->Diffuse[x])+m->Ambient[x] + *ppal++;
+        c = (pl_sInt) ((cb*m->Specular[x])+(ca*m->Diffuse[x])+m->Ambient[x] + *ppal++);
         *(pal++) = plMax(0,plMin(c,255));
       }
     } while (--i);
   } while (--i2);
   ca = 0;
   if (m->_AddTable) free(m->_AddTable);
-  m->_AddTable = (pl_uInt16 *) malloc((256+16)*sizeof(pl_uInt16));
-  addtable = m->_AddTable+8;
+  m->_AddTable = (pl_uInt16 *) malloc(256*sizeof(pl_uInt16));
+  addtable = m->_AddTable;
   i = 256;
   do {
-    a = pow(sin(ca), (double) m->Shininess) * num_shades;
+    a = sin(ca) * num_shades;
     ca += PL_PI/512.0;
     *addtable++ = ((pl_sInt) a)*t->NumColors;
   } while (--i);
-  for (i = 0; i < 8; i ++) m->_AddTable[i] = m->_AddTable[8];
-  for (i = 0; i < 8; i ++) m->_AddTable[256+8+i] = m->_AddTable[256+7];
 }
 
 static void _plGeneratePhongTransparentPalette(pl_Mat *m) {
-  m->_tsfact = m->NumGradients*(1.0/(1+m->Transparent));
-  if (m->_AddTable) free(m->_AddTable);
-  m->_AddTable = (pl_uInt16 *) 
-    malloc((256+16)*sizeof(pl_uInt16));
+  m->_tsfact = (pl_sInt) (m->NumGradients*(1.0/(1+m->Transparent)));
   _plGeneratePhongPalette(m);
 }
 
 static void  _plGenerateTransparentPalette(pl_Mat *m) {
   m->_tsfact = 0;
-  if (m->_AddTable) free(m->_AddTable);
-  m->_AddTable = (pl_uInt16 *) 
-    malloc((256+16)*sizeof(pl_uInt16));
   _plGeneratePhongPalette(m);
 }
 
@@ -373,25 +357,36 @@ typedef struct __ct {
   struct __ct *next;
 } _ct;
 
-int mdist(_ct *a, _ct *b) {
+static int mdist(_ct *a, _ct *b) {
   return ((a->r-b->r)*(a->r-b->r)+(a->g-b->g)*(a->g-b->g)+(a->b-b->b)*(a->b-b->b));
 }
 
-void plMatMakeOptPal2(pl_uChar *p, pl_uChar pstart, 
-                     pl_uChar pend, pl_Mat **materials) {
+void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart, 
+                     pl_sInt pend, pl_Mat **materials, pl_sInt nmats) {
   pl_uChar *allColors = 0;
-  pl_uInt numColors = 0, nc;
-  pl_uChar len = pend - pstart;
-  pl_sInt32 x, current, newnext, bestdist, thisdist;
+  pl_sInt numColors = 0, nc, x;
+  pl_sInt len = pend + 1 - pstart;
+  pl_sInt32 current, newnext, bestdist, thisdist;
   _ct *colorBlock, *best, *cp;
 
-  for (x = 0; materials[x]; x ++) {
-    if (!materials[x]->_RequestedColors) plMatInit(materials[x]);
-    allColors = (pl_uChar *) realloc((void *)allColors,
-                             (numColors+materials[x]->_ColorsUsed)*3);
-    memcpy(allColors + (numColors*3), materials[x]->_RequestedColors,
-           materials[x]->_ColorsUsed*3);
-    numColors += materials[x]->_ColorsUsed;
+  for (x = 0; x < nmats; x ++) {
+    if (materials[x]) {
+      if (!materials[x]->_RequestedColors) plMatInit(materials[x]);
+      if (materials[x]->_RequestedColors) numColors+=materials[x]->_ColorsUsed;
+    }
+  }
+  if (!numColors) return;
+
+  allColors=(pl_uChar*)malloc(numColors*3);
+  numColors=0;
+
+  for (x = 0; x < nmats; x ++) {
+    if (materials[x]) {
+      if (materials[x]->_RequestedColors) 
+        memcpy(allColors + (numColors*3), materials[x]->_RequestedColors,
+             materials[x]->_ColorsUsed*3);
+      numColors += materials[x]->_ColorsUsed;
+    }
   }
 
   if (numColors <= len) {

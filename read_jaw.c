@@ -1,13 +1,13 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 read_jaw.c
 Jaw3D Object Reader
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 *******************************************************************************
  Notes on .JAW files:
    This is a file format created by Jawed Karim for Jaw3D 
      (http://jaw3d.home.ml.org).
+          -- updated 11/6/00 - www.jawed.com
    It is very simple, and lets one easily create ones own models using only
    a text editor. The format is pretty simple:
      The first line must be "Light: (x,y,z)" where x,y, and z are the x y and

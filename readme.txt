@@ -1,5 +1,5 @@
-Plush 3D v1.1.3 - Source distribution
-- Updated 9/14/00 - new license (thanks, zlib)
+Plush 3D v1.2.0 - Source distribution
+- Updated 11/06/00
 
 0. CONTENTS
   0.   CONTENTS
@@ -36,6 +36,15 @@ I. LICENSE
 
      
 II. FEATURES
+
+  Changes in 1.2.0:
+    Static scene maximums (lights, triangles)
+    Texture+Environment combining modes
+    No more crashing!
+    Slower rasterizers (see above)
+    Other cleanups/fixes/optimizations.
+    Thinking about making Plush++
+
   Some notable features of Plush 1.1.0 are:
     Totally portable ANSI C source, tested on:
       DOS32: Watcom C 10.5, DJGPP v2 (gcc 2.7.2.1)

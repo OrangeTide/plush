@@ -2,8 +2,7 @@
 Plush Version 1.1
 text.c
 Text code and data (8xX bitmapped)
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -22,7 +21,7 @@ void plTextPutChar(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
                    pl_uChar color, pl_uChar c) {
   pl_uChar *font = current_font + (c*font_height);
   pl_sInt offset = x+(y*cam->ScreenWidth);
-  pl_ZBuffer zz = 1.0/z;
+  pl_ZBuffer zz = (pl_ZBuffer) (1.0/z);
   pl_sInt xx = x, a;
   pl_uChar len = font_height;
   pl_uChar ch;

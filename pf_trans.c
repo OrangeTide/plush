@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 pf_trans.c
 Solid Translucent Rasterizers
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -17,12 +16,16 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
   pl_sInt32 X1, X2, dX1=0, dX2=0, XL1, XL2;
   pl_ZBuffer Z1, ZL, dZ1=0, dZL=0, dZ2=0, Z2;
   pl_sInt32 Y1, Y2, Y0, dY;
-  pl_uInt16 *lookuptable = TriFace->Material->_AddTable+8;
+  pl_uInt16 *lookuptable = TriFace->Material->_AddTable;
   pl_uChar stat;
-  pl_uChar bc = TriFace->fShade*TriFace->Material->_tsfact;
+  pl_sInt32 bc = (pl_sInt32) TriFace->fShade*TriFace->Material->_tsfact;
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
 
   PUTFACE_SORT();
+  
+  if (bc < 0) bc=0;
+  if (bc > (pl_sInt32) TriFace->Material->_tsfact-1) bc=TriFace->Material->_tsfact-1;
+  remap+=bc;
 
   X2 = X1 = TriFace->Scrx[i0];
   Z2 = Z1 = TriFace->Scrz[i0];
@@ -101,13 +104,13 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
       if (zb) do {
           if (*zbuf < ZL) {
             *zbuf = ZL;
-            *gmem = remap[bc + lookuptable[*gmem]];
+            *gmem = remap[lookuptable[*gmem]];
           }
           gmem++; 
           zbuf++;
           ZL += dZL;
         } while (--XL2);
-      else do *gmem++ = remap[bc + lookuptable[*gmem]]; while (--XL2);
+      else do *gmem++ = remap[lookuptable[*gmem]]; while (--XL2);
       gmem -= XL1;
       zbuf -= XL1;
     }
@@ -129,14 +132,17 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
   pl_ZBuffer Z1, ZL, dZ1=0, dZL=0, dZ2=0, Z2;
   pl_sInt32 dC1=0, dCL=0, CL, C1, C2, dC2=0;
   pl_sInt32 Y1, Y2, Y0, dY;
-  pl_Float nc = TriFace->Material->_tsfact*65535.0;
-  pl_uInt16 *lookuptable = TriFace->Material->_AddTable+8;
+  pl_Float nc = (TriFace->Material->_tsfact*65536.0f);
+  pl_uInt16 *lookuptable = TriFace->Material->_AddTable;
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
   pl_uChar stat;
 
+  pl_sInt32 maxColor=((TriFace->Material->_tsfact-1)<<16);
+  pl_sInt32 maxColorNonShift=TriFace->Material->_tsfact-1;
+
   PUTFACE_SORT();
 
-  C1 = C2 = TriFace->Shades[i0]*nc;
+  C1 = C2 = (pl_sInt32) (TriFace->Shades[i0]*nc);
   X2 = X1 = TriFace->Scrx[i0];
   Z2 = Z1 = TriFace->Scrz[i0];
   Y0 = (TriFace->Scry[i0]+(1<<19))>>20;
@@ -146,14 +152,14 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
   dY = Y2 - Y0;
   if (dY) {
     dX2 = (TriFace->Scrx[i2] - X1) / dY;
-    dC2 = (TriFace->Shades[i2]*nc - C1) / dY;
+    dC2 = (pl_sInt32) ((TriFace->Shades[i2]*nc - C1) / dY);
     dZ2 = (TriFace->Scrz[i2] - Z1) / dY;
   }
   dY = Y1-Y0;
   if (dY) {
     dX1 = (TriFace->Scrx[i1] - X1) / dY;
     dZ1 = (TriFace->Scrz[i1] - Z1) / dY;
-    dC1 = (TriFace->Shades[i1]*nc - C1) / dY;
+    dC1 = (pl_sInt32) ((TriFace->Shades[i1]*nc - C1) / dY);
     if (dX2 < dX1) {
       dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
       dC2 ^= dC1; dC1 ^= dC2; dC2 ^= dC1;
@@ -164,12 +170,12 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
     if (TriFace->Scrx[i1] > X1) {
       X2 = TriFace->Scrx[i1];
       Z2 = TriFace->Scrz[i1];
-      C2 = TriFace->Shades[i1]*nc;
+      C2 = (pl_sInt32) (TriFace->Shades[i1]*nc);
       stat = 2|4;
     } else {
       X1 = TriFace->Scrx[i1];
       Z1 = TriFace->Scrz[i1];
-      C1 = TriFace->Shades[i1]*nc;
+      C1 = (pl_sInt32) (TriFace->Shades[i1]*nc);
       stat = 1|8;
     }
   } 
@@ -209,7 +215,7 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
           dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
         }
         dZ1 = (TriFace->Scrz[i2]-Z1)/dY;
-        dC1 = (TriFace->Shades[i2]*nc - C1) / dY;
+        dC1 = (pl_sInt32) ((TriFace->Shades[i2]*nc - C1) / dY);
       }
     }
     CL = C1;
@@ -223,8 +229,12 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
       XL1 += XL2;
       if (zb) do {
           if (*zbuf < ZL) {
+            int av;
+            if (CL >= maxColor) av=maxColorNonShift;
+            else if (CL > 0) av=CL>>16;
+            else av=0;
             *zbuf = ZL;
-            *gmem = remap[(CL>>16) + lookuptable[*gmem]];
+            *gmem = remap[av + lookuptable[*gmem]];
           }
           gmem++; 
           CL += dCL;
@@ -232,7 +242,11 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
           ZL += dZL;
         } while (--XL2);
       else do {
-          *gmem++ = remap[(CL>>16) + lookuptable[*gmem]];
+          int av;
+          if (CL >= maxColor) av=maxColorNonShift;
+          else if (CL > 0) av=CL>>16;
+          else av=0;
+          *gmem++ = remap[av + lookuptable[*gmem]];
           CL += dCL;
         } while (--XL2);
       gmem -= XL1;

@@ -1,10 +1,7 @@
 /******************************************************************************
   pl_types.h
-  PLUSH 3D VERSION 1.1 TYPES DEFINITION HEADER
-  Copyright (c) 1996-1997 Justin Frankel
-  Do not distribute seperately from the rest of the package.
-  For more information on Plush and the latest updates, please visit
-    http://nullsoft.com/plush/
+  PLUSH 3D VERSION 1.2 TYPES DEFINITION HEADER
+  Copyright (c) 1996-2000 Justin Frankel
 ******************************************************************************/
 
 #ifndef _PL_TYPES_H_
@@ -45,6 +42,7 @@ typedef struct _pl_Mat {
   pl_Texture *Environment;     /* Environment map (ditto) */
   pl_Float TexScaling;         /* Texture map scaling */
   pl_Float EnvScaling;         /* Environment map scaling */
+  pl_uChar TexEnvMode;         /* TexEnv combining mode (PL_TEXENV_*) */
   pl_Bool zBufferable;         /* Can this material be zbuffered? */
   pl_uInt NumGradients;        /* Desired number of gradients to be used */
                  /* The following are used mostly internally */

@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 read_3ds.c
 3DS Object Reader
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
@@ -226,7 +225,7 @@ static void _pl3DSChunkReader(FILE *f, pl_uInt32 p) {
   pl_sInt16 n;
   pl_uInt32 pc;
 
-  while (ftell(f) < p) {
+  while (ftell(f) < (int)p) {
     pc = ftell(f);
     hid = _pl3DSReadWord(f); if (feof(f)) return;
     hlen = _pl3DSReadDWord(f); if (feof(f)) return;

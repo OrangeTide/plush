@@ -1,9 +1,8 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 putface.h
 Triangle Vertex Sorting Code for pf_*.c
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #ifndef _PUTFACE_H_
@@ -21,20 +20,6 @@ Free for non-commercial use. See license.txt for more information.
      i2 ^= i1; i1 ^= i2; i2 ^= i1; \
   }
 
-#define PUTFACE_SORT_TEXENV() \
-  PUTFACE_SORT_TEX(); \
-  eMappingU1=TriFace->eMappingU[i0]*Environment->uScale*\
-             TriFace->Material->EnvScaling;\
-  eMappingV1=TriFace->eMappingV[i0]*Environment->vScale*\
-             TriFace->Material->EnvScaling;\
-  eMappingU2=TriFace->eMappingU[i1]*Environment->uScale*\
-             TriFace->Material->EnvScaling;\
-  eMappingV2=TriFace->eMappingV[i1]*Environment->vScale*\
-             TriFace->Material->EnvScaling;\
-  eMappingU3=TriFace->eMappingU[i2]*Environment->uScale*\
-             TriFace->Material->EnvScaling;\
-  eMappingV3=TriFace->eMappingV[i2]*Environment->vScale*\
-             TriFace->Material->EnvScaling;
 
 #define PUTFACE_SORT_ENV() \
   PUTFACE_SORT(); \

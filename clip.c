@@ -1,233 +1,136 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 clip.c
 3D Frustum Clipping
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
 
-typedef struct {
-  pl_Float n[3], d;
-} _plane;
-
 #define NUM_CLIP_PLANES 5
-static _plane _clipPlanes[NUM_CLIP_PLANES];
-static pl_Cam *_cam;
-static pl_sInt32 _cx, _cy; 
-static pl_Float _fov;
-static pl_Float _adj_asp;
 
-static void _FindNormal(pl_Float x1, pl_Float x2, pl_Float x3,
-                        pl_Float y1, pl_Float y2, pl_Float y3,
-                        pl_Float z1, pl_Float z2, pl_Float z3,
-                        pl_Float *x, pl_Float *y, pl_Float *z);
-static pl_uInt _ClipToPlane(pl_uInt numVerts,  
-                       pl_Vertex *inVertices, pl_Float *inShades,
-                       pl_Float *ineMappingU, pl_Float *ineMappingV,
-                       pl_Float *inMappingU, pl_Float *inMappingV,
-                       _plane *plane, 
-                       pl_Vertex *Vertices, pl_Float *Shades, 
-                       pl_Float *eMappingU, pl_Float *eMappingV, 
-                       pl_Float *MappingU, pl_Float *MappingV);
+typedef struct
+{
+  pl_Vertex newVertices[8];
+  double Shades[8];
+  double MappingU[8];
+  double MappingV[8];
+  double eMappingU[8];
+  double eMappingV[8];
+} _clipInfo;
 
-static void _FindNormal(pl_Float x1, pl_Float x2, pl_Float x3,
-                          pl_Float y1, pl_Float y2, pl_Float y3,
-                          pl_Float z1, pl_Float z2, pl_Float z3,
-                          pl_Float *x, pl_Float *y, pl_Float *z) {
-  pl_Float tx1, tx2, ty1, ty2, tz1, tz2;
-  tx1 = x1-x2;
-  tx2 = x1-x3;
-  ty1 = y1-y2;
-  ty2 = y1-y3;
-  tz1 = z1-z2;
-  tz2 = z1-z3;
-  *x = ty1*tz2 - tz1*ty2;
-  *y = tz1*tx2 - tx1*tz2;
-  *z = tx1*ty2 - ty1*tx2;
-}
+
+static _clipInfo m_cl[2];
+
+
+static double m_clipPlanes[NUM_CLIP_PLANES][4];
+static pl_Cam *m_cam;
+static pl_sInt32 m_cx, m_cy; 
+static double m_fov;
+static double m_adj_asp;
+
+static void _FindNormal(double x2, double x3,
+                        double y2, double y3,
+                        double zv,
+                        double *res);
+
+ /* Returns: 0 if nothing gets in,  1 or 2 if pout1 & pout2 get in */
+static pl_uInt _ClipToPlane(pl_uInt numVerts, double *plane);
 
 void plClipSetFrustum(pl_Cam *cam) {
-  _plane *p;
-  _adj_asp = 1.0 / cam->AspectRatio;
-  _fov = plMin(plMax(cam->Fov,1),179);
-  _fov = (1.0/tan(_fov*(PL_PI/360.0)))*(cam->ClipRight-cam->ClipLeft);
-  _cx = cam->CenterX<<20;
-  _cy = cam->CenterY<<20;
-  _cam = cam;
-  p = _clipPlanes;
+  m_adj_asp = 1.0 / cam->AspectRatio;
+  m_fov = plMin(plMax(cam->Fov,1.0),179.0);
+  m_fov = (1.0/tan(m_fov*(PL_PI/360.0)))*(double) (cam->ClipRight-cam->ClipLeft);
+  m_cx = cam->CenterX<<20;
+  m_cy = cam->CenterY<<20;
+  m_cam = cam;
+  memset(m_clipPlanes,0,sizeof(m_clipPlanes));
+
   /* Back */
-  p->n[0] = p->n[1] = 0; p->n[2] = -1.0; p->d = -_cam->ClipBack;
-  p++;
+  m_clipPlanes[0][2] = -1.0; 
+  m_clipPlanes[0][3] = -cam->ClipBack;
+
   /* Left */
-  p->d = 0.00000001;
-  if (_cam->ClipLeft == _cam->CenterX) {
-    p->n[0] = 1.0;
-    p->n[1] = 0;
-    p->n[2] = 0;
+  m_clipPlanes[1][3] = 0.00000001;
+  if (cam->ClipLeft == cam->CenterX) {
+    m_clipPlanes[1][0] = 1.0;
   }
-  else _FindNormal(0,-100,-100, 
-                0, 100, -100,
-                0,_fov*-100.0/(_cam->ClipLeft-_cam->CenterX),
-                _fov*-100.0/(_cam->ClipLeft-_cam->CenterX),
-                p->n,p->n+1,p->n+2);
-  if (_cam->ClipLeft > _cam->CenterX) {
-    p->n[0] = -p->n[0];
-    p->n[1] = -p->n[1];
-    p->n[2] = -p->n[2];
+  else _FindNormal(-100,-100, 
+                100, -100,
+                m_fov*-100.0/(cam->ClipLeft-cam->CenterX),
+                m_clipPlanes[1]);
+  if (cam->ClipLeft > cam->CenterX) {
+    m_clipPlanes[1][0] = -m_clipPlanes[1][0];
+    m_clipPlanes[1][1] = -m_clipPlanes[1][1];
+    m_clipPlanes[1][2] = -m_clipPlanes[1][2];
   }
-  p++;
+
   /* Right */
-  p->d = 0.00000001;
-  if (_cam->ClipRight == _cam->CenterX) {
-    p->n[0] = -1.0;
-    p->n[1] = 0;
-    p->n[2] = 0;
+  m_clipPlanes[2][3] = 0.00000001;
+  if (cam->ClipRight == cam->CenterX) {
+    m_clipPlanes[2][0] = -1.0;
   }
-  else _FindNormal(0,100,100, 
-                0, -100, 100,
-                0,_fov*100.0/(_cam->ClipRight-_cam->CenterX),
-                _fov*100.0/(_cam->ClipRight-_cam->CenterX),
-                p->n,p->n+1,p->n+2);
-  if (_cam->ClipRight < _cam->CenterX) {
-    p->n[0] = -p->n[0];
-    p->n[1] = -p->n[1];
-    p->n[2] = -p->n[2];
+  else _FindNormal(100,100, 
+                -100, 100,
+                m_fov*100.0/(cam->ClipRight-cam->CenterX),
+                m_clipPlanes[2]);
+  if (cam->ClipRight < cam->CenterX) {
+    m_clipPlanes[2][0] = -m_clipPlanes[2][0];
+    m_clipPlanes[2][1] = -m_clipPlanes[2][1];
+    m_clipPlanes[2][2] = -m_clipPlanes[2][2];
   }
-  p++;
   /* Top */
-  p->d = 0.00000001;
-  if (_cam->ClipTop == _cam->CenterY) {
-    p->n[0] = 0;
-    p->n[1] = -1.0;
-    p->n[2] = 0;
-  } else _FindNormal(0, 100, -100, 
-                0, 100, 100,
-                0,_fov*_adj_asp*100.0/(_cam->CenterY-_cam->ClipTop),
-                _fov*_adj_asp*100.0/(_cam->CenterY-_cam->ClipTop),
-                p->n,p->n+1,p->n+2);
-  if (_cam->ClipTop > _cam->CenterY) {
-    p->n[0] = -p->n[0];
-    p->n[1] = -p->n[1];
-    p->n[2] = -p->n[2];
+  m_clipPlanes[3][3] = 0.00000001;
+  if (cam->ClipTop == cam->CenterY) {
+    m_clipPlanes[3][1] = -1.0;
+  } else _FindNormal(100, -100, 
+                100, 100,
+                m_fov*m_adj_asp*100.0/(cam->CenterY-cam->ClipTop),
+                m_clipPlanes[3]);
+  if (cam->ClipTop > cam->CenterY) {
+    m_clipPlanes[3][0] = -m_clipPlanes[3][0];
+    m_clipPlanes[3][1] = -m_clipPlanes[3][1];
+    m_clipPlanes[3][2] = -m_clipPlanes[3][2];
   }
  
   /* Bottom */
-  p++;
-  p->d = 0.00000001;
-  if (_cam->ClipBottom == _cam->CenterY) {
-    p->n[0] = 0;
-    p->n[1] = 1.0;
-    p->n[2] = 0;
-  } else _FindNormal(0, -100, 100, 
-                0, -100, -100,
-                0,_fov*_adj_asp*-100.0/(_cam->CenterY-_cam->ClipBottom),
-                _fov*_adj_asp*-100.0/(_cam->CenterY-_cam->ClipBottom),
-                p->n,p->n+1,p->n+2);
-  if (_cam->ClipBottom < _cam->CenterY) {
-    p->n[0] = -p->n[0];
-    p->n[1] = -p->n[1];
-    p->n[2] = -p->n[2];
+  m_clipPlanes[4][3] = 0.00000001;
+  if (cam->ClipBottom == cam->CenterY) {
+    m_clipPlanes[4][1] = 1.0;
+  } else _FindNormal(-100, 100, 
+                -100, -100,
+                m_fov*m_adj_asp*-100.0/(cam->CenterY-cam->ClipBottom),
+                m_clipPlanes[4]);
+  if (cam->ClipBottom < cam->CenterY) {
+    m_clipPlanes[4][0] = -m_clipPlanes[4][0];
+    m_clipPlanes[4][1] = -m_clipPlanes[4][1];
+    m_clipPlanes[4][2] = -m_clipPlanes[4][2];
   }
 }
 
- /* Returns: 0 if nothing gets in,  1 or 2 if pout1 & pout2 get in */
-static pl_uInt _ClipToPlane(pl_uInt numVerts,  
-                       pl_Vertex *inVertices, pl_Float *inShades,
-                       pl_Float *ineMappingU, pl_Float *ineMappingV,
-                       pl_Float *inMappingU, pl_Float *inMappingV,
-                      _plane *plane, 
-                       pl_Vertex *Vertices, pl_Float *Shades, 
-                       pl_Float *eMappingU, pl_Float *eMappingV, 
-                       pl_Float *MappingU, pl_Float *MappingV) {
-  pl_uInt i, nextvert, curin, nextin;
-  pl_Float curdot, nextdot, scale;
-  pl_uInt invert, outvert;
-  invert = 0;
-  outvert = 0;
-  curdot = inVertices[0].xformedx*plane->n[0] +
-           inVertices[0].xformedy*plane->n[1] +
-           inVertices[0].xformedz*plane->n[2];
-  curin = (curdot >= plane->d);
-
-  for (i=0 ; i < numVerts; i++) {
-    nextvert = (i + 1) % numVerts;
-    if (curin) {
-      Shades[outvert] = inShades[invert];
-      MappingU[outvert] = inMappingU[invert];
-      MappingV[outvert] = inMappingV[invert];
-      eMappingU[outvert] = ineMappingU[invert];
-      eMappingV[outvert] = ineMappingV[invert];
-      Vertices[outvert++] = inVertices[invert];
-    }
-    nextdot = inVertices[nextvert].xformedx*plane->n[0] +
-              inVertices[nextvert].xformedy*plane->n[1] +
-              inVertices[nextvert].xformedz*plane->n[2];
-    nextin = (nextdot >= plane->d);
-    if (curin != nextin) {
-      scale = (plane->d - curdot) / (nextdot - curdot);
-      Vertices[outvert].xformedx = inVertices[invert].xformedx +
-           (inVertices[nextvert].xformedx - inVertices[invert].xformedx)
-             * scale;
-      Vertices[outvert].xformedy = inVertices[invert].xformedy +
-           (inVertices[nextvert].xformedy - inVertices[invert].xformedy)
-             * scale;
-      Vertices[outvert].xformedz = inVertices[invert].xformedz +
-           (inVertices[nextvert].xformedz - inVertices[invert].xformedz)
-             * scale;
-      Shades[outvert] = inShades[invert] + 
-                        (inShades[nextvert] - inShades[invert]) * scale;
-      MappingU[outvert] = inMappingU[invert] + 
-           (inMappingU[nextvert] - inMappingU[invert]) * scale;
-      MappingV[outvert] = inMappingV[invert] + 
-           (inMappingV[nextvert] - inMappingV[invert]) * scale;
-      eMappingU[outvert] = ineMappingU[invert] + 
-           (ineMappingU[nextvert] - ineMappingU[invert]) * scale;
-      eMappingV[outvert] = ineMappingV[invert] + 
-           (ineMappingV[nextvert] - ineMappingV[invert]) * scale;
-      outvert++;
-    }
-    curdot = nextdot;
-    curin = nextin;
-    invert++;
-  }
-  return outvert;
-}
 
 void plClipRenderFace(pl_Face *face) {
   pl_uInt k, a, w, numVerts, q;
-  pl_Float tmp, tmp2;
+  double tmp, tmp2;
   pl_Face newface;
-  static pl_Vertex newVertices[2][8];
-  static pl_Float Shades[2][8];
-  static pl_Float MappingU[2][8];
-  static pl_Float MappingV[2][8];
-  static pl_Float eMappingU[2][8];
-  static pl_Float eMappingV[2][8];
-
-  if (!face->Material->_PutFace) return;
 
   for (a = 0; a < 3; a ++) {
-    newVertices[0][a] = *(face->Vertices[a]);
-    Shades[0][a] = face->Shades[a];
-    MappingU[0][a] = face->MappingU[a];
-    MappingV[0][a] = face->MappingV[a];
-    eMappingU[0][a] = face->eMappingU[a];
-    eMappingV[0][a] = face->eMappingV[a];
+    m_cl[0].newVertices[a] = *(face->Vertices[a]);
+    m_cl[0].Shades[a] = face->Shades[a];
+    m_cl[0].MappingU[a] = face->MappingU[a];
+    m_cl[0].MappingV[a] = face->MappingV[a];
+    m_cl[0].eMappingU[a] = face->eMappingU[a];
+    m_cl[0].eMappingV[a] = face->eMappingV[a];
   }
 
   numVerts = 3;
   q = 0;
-  for (a = (_clipPlanes->d < 0.0 ? 0 : 1);
-       a < NUM_CLIP_PLANES && numVerts > 2; a ++) {
-    numVerts = _ClipToPlane(numVerts, newVertices[q], Shades[q],
-                           eMappingU[q], eMappingV[q], MappingU[q],
-                           MappingV[q], _clipPlanes+a, newVertices[q^1],
-                           Shades[q^1], eMappingU[q^1],
-                           eMappingV[q^1], MappingU[q^1],
-                           MappingV[q^1]);
-    q ^= 1;
+  a = (m_clipPlanes[0][3] < 0.0 ? 0 : 1);
+  while (a < NUM_CLIP_PLANES && numVerts > 2)
+  {
+    numVerts = _ClipToPlane(numVerts, m_clipPlanes[a]);
+    memcpy(&m_cl[0],&m_cl[1],sizeof(m_cl)/2);
+    a++;
   }
   if (numVerts > 2) {
     memcpy(&newface,face,sizeof(pl_Face));
@@ -236,70 +139,117 @@ void plClipRenderFace(pl_Face *face) {
       for (a = 0; a < 3; a ++) {
         if (a == 0) w = 0;
         else w = a+(k-2);
-        newface.Vertices[a] = newVertices[q] + w;
-        newface.Shades[a] = plMax(0.0,plMin(Shades[q][w],1.0));
-        newface.MappingU[a] = MappingU[q][w];
-        newface.MappingV[a] = MappingV[q][w];
-        newface.eMappingU[a] = eMappingU[q][w];
-        newface.eMappingV[a] = eMappingV[q][w];
-        newface.Scrz[a] = 1.0/newface.Vertices[a]->xformedz;
-        tmp2 = _fov * newface.Scrz[a];
+        newface.Vertices[a] = m_cl[0].newVertices+w;
+        newface.Shades[a] = (pl_Float) m_cl[0].Shades[w];
+        newface.MappingU[a] = (pl_sInt32)m_cl[0].MappingU[w];
+        newface.MappingV[a] = (pl_sInt32)m_cl[0].MappingV[w];
+        newface.eMappingU[a] = (pl_sInt32)m_cl[0].eMappingU[w];
+        newface.eMappingV[a] = (pl_sInt32)m_cl[0].eMappingV[w];
+        newface.Scrz[a] = 1.0f/newface.Vertices[a]->xformedz;
+        tmp2 = m_fov * newface.Scrz[a];
         tmp = tmp2*newface.Vertices[a]->xformedx;
         tmp2 *= newface.Vertices[a]->xformedy;
-        newface.Scrx[a] = _cx + ((pl_sInt32)((tmp*(float) (1<<20))));
-        newface.Scry[a] = _cy - ((pl_sInt32)((tmp2*_adj_asp*(float) (1<<20))));
+        newface.Scrx[a] = m_cx + ((pl_sInt32)((tmp*(float) (1<<20))));
+        newface.Scry[a] = m_cy - ((pl_sInt32)((tmp2*m_adj_asp*(float) (1<<20))));
       }
-      newface.Material->_PutFace(_cam,&newface);
+      newface.Material->_PutFace(m_cam,&newface);
       plRender_TriStats[3] ++; 
     }
     plRender_TriStats[2] ++; 
   }
 }
 
-void plClipRenderFaceNC(pl_Face *face) {
-  pl_uChar a;
-  pl_Float tmp, tmp2;
-  if (face->Material->_PutFace)  {
-    for (a = 0; a < 3; a ++) {
-      face->Shades[a] = plMax(0.0,plMin(face->Shades[a],1.0));
-      face->Scrz[a] = 1.0 / face->Vertices[a]->xformedz;
-      tmp2 = _fov * face->Scrz[a];
-      tmp = tmp2*face->Vertices[a]->xformedx;
-      tmp2 *= face->Vertices[a]->xformedy;
-      face->Scrx[a] = _cx + ((pl_sInt32)((tmp*(float) (1<<20))));
-      face->Scry[a] = _cy - ((pl_sInt32)((tmp2*_adj_asp*(float) (1<<20))));
-    }
-    face->Material->_PutFace(_cam,face);
-    plRender_TriStats[2]++;
-    plRender_TriStats[3]++;
-  }
-}
-
 pl_sInt plClipNeeded(pl_Face *face) {
-  pl_sInt dr,dl,db,dt; 
-  pl_Float f;
-  dr = (_cam->ClipRight-_cam->CenterX);
-  dl = (_cam->ClipLeft-_cam->CenterX);
-  db = (_cam->ClipBottom-_cam->CenterY);
-  dt = (_cam->ClipTop-_cam->CenterY);
-  f = _fov*_adj_asp;
-  return ((_cam->ClipBack <= 0.0 ||
-           face->Vertices[0]->xformedz <= _cam->ClipBack ||
-           face->Vertices[1]->xformedz <= _cam->ClipBack ||
-           face->Vertices[2]->xformedz <= _cam->ClipBack) &&
+  double dr,dl,db,dt; 
+  double f;
+  dr = (m_cam->ClipRight-m_cam->CenterX);
+  dl = (m_cam->ClipLeft-m_cam->CenterX);
+  db = (m_cam->ClipBottom-m_cam->CenterY);
+  dt = (m_cam->ClipTop-m_cam->CenterY);
+  f = m_fov*m_adj_asp;
+  return ((m_cam->ClipBack <= 0.0 ||
+           face->Vertices[0]->xformedz <= m_cam->ClipBack ||
+           face->Vertices[1]->xformedz <= m_cam->ClipBack ||
+           face->Vertices[2]->xformedz <= m_cam->ClipBack) &&
           (face->Vertices[0]->xformedz >= 0 ||
            face->Vertices[1]->xformedz >= 0 || 
            face->Vertices[2]->xformedz >= 0) &&
-          (face->Vertices[0]->xformedx*_fov<=dr*face->Vertices[0]->xformedz ||
-           face->Vertices[1]->xformedx*_fov<=dr*face->Vertices[1]->xformedz ||
-           face->Vertices[2]->xformedx*_fov<=dr*face->Vertices[2]->xformedz) &&
-          (face->Vertices[0]->xformedx*_fov>=dl*face->Vertices[0]->xformedz ||
-           face->Vertices[1]->xformedx*_fov>=dl*face->Vertices[1]->xformedz ||
-           face->Vertices[2]->xformedx*_fov>=dl*face->Vertices[2]->xformedz) &&
+          (face->Vertices[0]->xformedx*m_fov<=dr*face->Vertices[0]->xformedz ||
+           face->Vertices[1]->xformedx*m_fov<=dr*face->Vertices[1]->xformedz ||
+           face->Vertices[2]->xformedx*m_fov<=dr*face->Vertices[2]->xformedz) &&
+          (face->Vertices[0]->xformedx*m_fov>=dl*face->Vertices[0]->xformedz ||
+           face->Vertices[1]->xformedx*m_fov>=dl*face->Vertices[1]->xformedz ||
+           face->Vertices[2]->xformedx*m_fov>=dl*face->Vertices[2]->xformedz) &&
           (face->Vertices[0]->xformedy*f<=db*face->Vertices[0]->xformedz ||
            face->Vertices[1]->xformedy*f<=db*face->Vertices[1]->xformedz ||
            face->Vertices[2]->xformedy*f<=db*face->Vertices[2]->xformedz) &&
           (face->Vertices[0]->xformedy*f>=dt*face->Vertices[0]->xformedz ||
            face->Vertices[1]->xformedy*f>=dt*face->Vertices[1]->xformedz ||
            face->Vertices[2]->xformedy*f>=dt*face->Vertices[2]->xformedz));
+}
+
+
+
+static void _FindNormal(double x2, double x3,double y2, double y3,
+                        double zv, double *res) {
+  res[0] = zv*(y2-y3);
+  res[1] = zv*(x3-x2);
+  res[2] = x2*y3 - y2*x3;
+}
+
+ /* Returns: 0 if nothing gets in,  1 or 2 if pout1 & pout2 get in */
+static pl_uInt _ClipToPlane(pl_uInt numVerts, double *plane)
+{
+  pl_uInt i, nextvert, curin, nextin;
+  double curdot, nextdot, scale;
+  pl_uInt invert, outvert;
+  invert = 0;
+  outvert = 0;
+  curdot = m_cl[0].newVertices[0].xformedx*plane[0] +
+           m_cl[0].newVertices[0].xformedy*plane[1] +
+           m_cl[0].newVertices[0].xformedz*plane[2];
+  curin = (curdot >= plane[3]);
+
+  for (i=0 ; i < numVerts; i++) {
+    nextvert = (i + 1) % numVerts;
+    if (curin) {
+      m_cl[1].Shades[outvert] = m_cl[0].Shades[invert];
+      m_cl[1].MappingU[outvert] = m_cl[0].MappingU[invert];
+      m_cl[1].MappingV[outvert] = m_cl[0].MappingV[invert];
+      m_cl[1].eMappingU[outvert] = m_cl[0].eMappingU[invert];
+      m_cl[1].eMappingV[outvert] = m_cl[0].eMappingV[invert];
+      m_cl[1].newVertices[outvert++] = m_cl[0].newVertices[invert];
+    }
+    nextdot = m_cl[0].newVertices[nextvert].xformedx*plane[0] +
+              m_cl[0].newVertices[nextvert].xformedy*plane[1] +
+              m_cl[0].newVertices[nextvert].xformedz*plane[2];
+    nextin = (nextdot >= plane[3]);
+    if (curin != nextin) {
+      scale = (plane[3] - curdot) / (nextdot - curdot);
+      m_cl[1].newVertices[outvert].xformedx = (pl_Float) (m_cl[0].newVertices[invert].xformedx +
+           (m_cl[0].newVertices[nextvert].xformedx - m_cl[0].newVertices[invert].xformedx)
+             * scale);
+      m_cl[1].newVertices[outvert].xformedy = (pl_Float) (m_cl[0].newVertices[invert].xformedy +
+           (m_cl[0].newVertices[nextvert].xformedy - m_cl[0].newVertices[invert].xformedy)
+             * scale);
+      m_cl[1].newVertices[outvert].xformedz = (pl_Float) (m_cl[0].newVertices[invert].xformedz +
+           (m_cl[0].newVertices[nextvert].xformedz - m_cl[0].newVertices[invert].xformedz)
+             * scale);
+      m_cl[1].Shades[outvert] = m_cl[0].Shades[invert] + 
+                        (m_cl[0].Shades[nextvert] - m_cl[0].Shades[invert]) * scale;
+      m_cl[1].MappingU[outvert] = m_cl[0].MappingU[invert] + 
+           (m_cl[0].MappingU[nextvert] - m_cl[0].MappingU[invert]) * scale;
+      m_cl[1].MappingV[outvert] = m_cl[0].MappingV[invert] + 
+           (m_cl[0].MappingV[nextvert] - m_cl[0].MappingV[invert]) * scale;
+      m_cl[1].eMappingU[outvert] = m_cl[0].eMappingU[invert] + 
+           (m_cl[0].eMappingU[nextvert] - m_cl[0].eMappingU[invert]) * scale;
+      m_cl[1].eMappingV[outvert] = m_cl[0].eMappingV[invert] + 
+           (m_cl[0].eMappingV[nextvert] - m_cl[0].eMappingV[invert]) * scale;
+      outvert++;
+    }
+    curdot = nextdot;
+    curin = nextin;
+    invert++;
+  }
+  return outvert;
 }

@@ -1,14 +1,13 @@
 /******************************************************************************
-Plush Version 1.1
+Plush Version 1.2
 read_pcx.c
 PCX Texture Reader
-All code copyright (c) 1996-1997, Justin Frankel
-Free for non-commercial use. See license.txt for more information.
+Copyright (c) 1996-2000, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
 
-static pl_uChar _plHiBit(pl_uInt16);
+static pl_uInt _plHiBit(pl_uInt16);
 static pl_uInt _plOptimizeImage(pl_uChar *, pl_uChar *, pl_uInt32);
 static pl_sInt _plReadPCX(char *filename, pl_uInt16 *width, pl_uInt16 *height, 
                           pl_uChar **pal, pl_uChar **data);
@@ -56,8 +55,8 @@ pl_Texture *plReadPCXTex(char *fn, pl_Bool rescale, pl_Bool optimize) {
 }
 
 
-static pl_uChar _plHiBit(pl_uInt16 x) {
-  pl_uInt16 i = 16, mask = 1<<15;
+static pl_uInt _plHiBit(pl_uInt16 x) {
+  pl_uInt i = 16, mask = 1<<15;
   while (mask) {
     if (x & mask) return i;
     mask >>= 1; i--;
@@ -68,11 +67,12 @@ static pl_uChar _plHiBit(pl_uInt16 x) {
 static pl_uInt _plOptimizeImage(pl_uChar *pal, pl_uChar *data, pl_uInt32 len) {
   pl_uChar colors[256], *dd = data;
   pl_uChar remap[256];
-  pl_sInt32 x, lastused, firstunused;
+  pl_sInt32 lastused, firstunused;
+  pl_uInt32 x;
   memset(colors,0,256);
   for (x = 0; x < len; x ++) colors[(pl_uInt) *dd++] = 1;
   lastused = -1;
-  for (x = 0; x < 256; x ++) remap[x] = x;
+  for (x = 0; x < 256; x ++) remap[x] = (pl_uChar)x;
   lastused = 255;
   firstunused = 0;
   for (;;) {  
@@ -86,7 +86,7 @@ static pl_uInt _plOptimizeImage(pl_uChar *pal, pl_uChar *data, pl_uInt32 len) {
     pal[firstunused*3+2] = pal[lastused*3+2];
     colors[lastused] = 0;
     colors[firstunused] = 1;
-	remap[lastused] = firstunused;
+	  remap[lastused] = (pl_uChar) firstunused;
   }
   x = len;
   while (x--) *data++ = remap[(pl_uInt) *data];
