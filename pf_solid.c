@@ -1,156 +1,259 @@
 /******************************************************************************
-**                         Plush Version 1.0                                 **
-**                                                                           **
-**                         Solid Rasterizers                                 **
-**                                                                           **
-**             All code copyright (c) 1996-1997, Justin Frankel              **
+Plush Version 1.1
+pf_solid.c
+Solid Rasterizers
+All code copyright (c) 1996-1997, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
 #include "putface.h"
 
-void plPF_SolidF(pl_CameraType *cam, pl_FaceType *TriFace) {
-  pl_VertexType *sp[3];
-  unsigned char *gmem = cam->frameBuffer;
-  pl_sInt32Type X1, X2, dX1, dX2, XL1, XL2;
-  pl_sInt32Type Y1, Y2, Y0, dY;
-  pl_uInt16Type *slb = cam->_ScanLineBuffer;
-  unsigned char bc = TriFace->Material->_ColorBase + 
-                     TriFace->Shade*(TriFace->Material->_ColorsUsed-1);
+void plPF_SolidF(pl_Cam *cam, pl_Face *TriFace) {
+  pl_uChar i0, i1, i2;
+
+  pl_uChar *gmem = cam->frameBuffer;
+  pl_ZBuffer *zbuf = cam->zBuffer;
+
+  pl_sInt32 X1, X2, dX1=0, dX2=0, XL1, XL2;
+  pl_ZBuffer dZL=0, dZ1=0, dZ2=0, Z1, ZL, Z2, Z3;
+  pl_sInt32 Y1, Y2, Y0, dY;
+  pl_uChar stat;
+  pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
+  pl_uChar bc = TriFace->Material->_ReMapTable[(pl_uInt)(TriFace->fShade*
+                                        (TriFace->Material->_ColorsUsed-1))];
 
   PUTFACE_SORT();
 
-  X2 = X1 = sp[0]->scrx;
-  Y0 = sp[0]->scry>>16;
-  Y1 = sp[1]->scry>>16;
-  Y2 = sp[2]->scry>>16;
-  if (Y2 == Y0) Y2++;
+  X2 = X1 = TriFace->Scrx[i0];
+  Z1 = TriFace->Scrz[i0];
+  Z2 = TriFace->Scrz[i1];
+  Z3 = TriFace->Scrz[i2];
+  Y0 = (TriFace->Scry[i0]+32768) >> 16;
+  Y1 = (TriFace->Scry[i1]+32768) >> 16;
+  Y2 = (TriFace->Scry[i2]+32768) >> 16;
+
+  dY = Y2-Y0;
+  if (dY) {
+    dX2 = (TriFace->Scrx[i2] - X1) / dY;
+    dZ2 = (Z3 - Z1) / dY;
+  }
   dY = Y1-Y0;
-  dX1 = (sp[1]->scrx - X1) / (dY ? dY : 1);
-  dX2 = (sp[2]->scrx - X1) / (Y2-Y0);
-  if (!dY) {
-    if (sp[1]->scrx > X1) X2 = sp[1]->scrx;
-    else X1 = sp[1]->scrx;
-  } else if (dX2 < dX1) {
-    dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
+  if (dY) {
+    dX1 = (TriFace->Scrx[i1] - X1) / dY;
+    dZ1 = (Z2 - Z1) / dY;
+    if (dX2 < dX1) {
+      dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
+      dZL = dZ1; dZ1 = dZ2; dZ2 = dZL;
+      stat = 2;
+    } else stat = 1;
+    Z2 = Z1;
+  } else {
+    if (TriFace->Scrx[i1] > X1) {
+      X2 = TriFace->Scrx[i1];
+      stat = 2|4;
+    } else {
+      X1 = TriFace->Scrx[i1];
+      ZL = Z1; Z1 = Z2; Z2 = ZL;
+      stat = 1|8;
+    }
+  } 
+
+  if (zb) {
+    XL1 = ((dX1-dX2)*dY+32768)>>16;
+    if (XL1) dZL = ((dZ1-dZ2)*dY)/XL1;
+    else { 
+      XL1 = (X2-X1+32768)>>16;
+      if (zb && XL1) dZL = (Z2-Z1)/XL1;
+      else dZL = 0.0;
+    }
   }
 
-  if (Y0 >= cam->ClipBottom) return;
-  Y2 = plMin(cam->ClipBottom,Y2);
-
   gmem += (Y0 * cam->ScreenWidth);
+  zbuf += (Y0 * cam->ScreenWidth);
 
-  do {
+  while (Y0 < Y2) {
     if (Y0 == Y1) {
-      dY = (sp[2]->scry>>16) - (sp[1]->scry>>16);
-      if (!dY) return;
-      dX1 = (sp[2]->scrx-X1)/dY;
-      dX2 = (sp[2]->scrx-X2)/dY;
-    }
-    if (Y0 >= cam->ClipTop) {
-      XL1 = (X1+32768)>>16;
-      XL2 = (X2+32768)>>16;
-      XL1 = plMax(cam->ClipLeft, XL1);
-      XL2 = plMin(cam->ClipRight, XL2);
-      if ((XL2-XL1) > 0) {
-        if (slb) {
-          if (XL1 < *(slb + (Y0<<2))) *(slb + (Y0<<2)) = XL1;
-          if (XL2 > *(slb + (Y0<<2) + 1)) *(slb + (Y0<<2) + 1) = XL2;
+      dY = Y2 - ((TriFace->Scry[i1]+32768)>>16);
+      if (dY) {
+        if (stat & 1) {
+          X1 = TriFace->Scrx[i1];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
         }
-        XL2 -= XL1;
-        gmem += XL1;
-        XL1 += XL2;
-        do *gmem++ = bc; while (--XL2);
-        gmem -= XL1;
+        if (stat & 2) {
+          X2 = TriFace->Scrx[i1];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
+        }
+        if (stat & 4) {
+          X1 = TriFace->Scrx[i0];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
+        if (stat & 8) {
+          X2 = TriFace->Scrx[i0];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
+        dZ1 = (Z3-Z1)/dY;
       }
     }
+    XL1 = (X1+32768)>>16;
+    XL2 = (X2+32768)>>16;
+    ZL = Z1;
+    XL2 -= XL1; 
+    if (XL2 > 0) {
+      zbuf += XL1;
+      gmem += XL1;
+      XL1 += XL2;
+      if (zb) do {
+          if (*zbuf < ZL) {
+            *zbuf = ZL;
+            *gmem = bc;
+          }
+          gmem++; 
+          zbuf++;
+          ZL += dZL;
+        } while (--XL2);
+      else do *gmem++ = bc; while (--XL2);
+      gmem -= XL1;
+      zbuf -= XL1;
+    }
     gmem += cam->ScreenWidth;
+    zbuf += cam->ScreenWidth;
+    Z1 += dZ1;
     X1 += dX1;
     X2 += dX2;
-  } while (++Y0 < Y2);
+    Y0++;
+  }
 }
 
-void plPF_SolidG(pl_CameraType *cam, pl_FaceType *TriFace) {
-  pl_VertexType *sp[3];
-  unsigned char *gmem = cam->frameBuffer;
-  pl_sInt32Type dX1, dX2, X1, X2, XL1, XL2;
-  pl_sInt32Type dC1, dCL, CL, C1, C2, dC2;
-  pl_sInt32Type Y1, Y2, Y0, dY;
-  pl_uInt16Type *slb = cam->_ScanLineBuffer;
-  pl_sInt32Type bc = TriFace->Material->_ColorBase<<16;
-  pl_FloatType nc = (TriFace->Material->_ColorsUsed-1)*65535.0;
- 
+void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
+  pl_uChar i0, i1, i2;
+  pl_uChar *gmem = cam->frameBuffer;
+  pl_uChar *remap = TriFace->Material->_ReMapTable;
+  pl_ZBuffer *zbuf = cam->zBuffer;
+  pl_ZBuffer dZL=0, dZ1=0, dZ2=0, Z1, Z2, ZL, Z3;
+  pl_sInt32 dX1=0, dX2=0, X1, X2, XL1, XL2;
+  pl_sInt32 C1, C2, dC1=0, dC2=0, dCL=0, CL, C3;
+  pl_sInt32 Y1, Y2, Y0, dY;
+  pl_uChar stat;
+  pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
+
+  pl_Float nc = (TriFace->Material->_ColorsUsed-1)*65535.0;
+
   PUTFACE_SORT();
+  
+  C1 = (pl_sInt32) (TriFace->Shades[i0]*nc);
+  C2 = (pl_sInt32) (TriFace->Shades[i1]*nc);
+  C3 = (pl_sInt32) (TriFace->Shades[i2]*nc);
+  X2 = X1 = TriFace->Scrx[i0];
+  Z1 = TriFace->Scrz[i0];
+  Z2 = TriFace->Scrz[i1];
+  Z3 = TriFace->Scrz[i2];
 
-  C1 = C2 = sp[0]->Shade*nc + bc;
-  X2 = X1 = sp[0]->scrx;
+  Y0 = (TriFace->Scry[i0]+32768)>>16;
+  Y1 = (TriFace->Scry[i1]+32768)>>16;
+  Y2 = (TriFace->Scry[i2]+32768)>>16;
 
-  Y0 = sp[0]->scry>>16;
-  Y1 = sp[1]->scry>>16;
-  Y2 = sp[2]->scry>>16;
-
-  if (Y2 == Y0) Y2++;
-  dY = Y1-Y0;
-  dX1 = (sp[1]->scrx - X1) / (dY ? dY : 1);
-  dC1 = (sp[1]->Shade*nc + bc - C1) / (dY ? dY : 1);
-  dX2 = (sp[2]->scrx - X1) / (Y2-Y0);
-  dC2 = (sp[2]->Shade*nc + bc - C1) / (Y2-Y0);
-  if (!dY) {
-    if (sp[1]->scrx > X1) {
-      X2 = sp[1]->scrx;
-      C2 = sp[1]->Shade*nc + bc;
-    } else {
-      X1 = sp[1]->scrx;
-      C1 = sp[1]->Shade*nc + bc;
-    }
-  } else if (dX2 < dX1) {
-    dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
-    dC2 ^= dC1; dC1 ^= dC2; dC2 ^= dC1;
+  dY = Y2 - Y0;
+  if (dY) {
+    dX2 = (TriFace->Scrx[i2] - X1) / dY;
+    dC2 = (C3 - C1) / dY;
+    dZ2 = (Z3 - Z1) / dY;
   }
-
-  if (Y0 >= cam->ClipBottom) return;
-  Y2 = plMin(cam->ClipBottom,Y2);
+  dY = Y1 - Y0;
+  if (dY) {
+    dX1 = (TriFace->Scrx[i1] - X1) / dY;
+    dC1 = (C2 - C1) / dY;
+    dZ1 = (Z2 - Z1) / dY;
+    if (dX2 < dX1) {
+      dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
+      dC2 ^= dC1; dC1 ^= dC2; dC2 ^= dC1;
+      dZL = dZ1; dZ1 = dZ2; dZ2 = dZL;
+      stat = 2;
+    } else stat = 1;
+    Z2 = Z1;
+    C2 = C1;
+  } else {
+    if (TriFace->Scrx[i1] > X1) {
+      X2 = TriFace->Scrx[i1];
+      stat = 2|4;
+    } else {
+      X1 = TriFace->Scrx[i1];
+      ZL = Z1; Z1 = Z2; Z2 = ZL;
+      ZL = C1; C1 = C2; C2 = ZL;
+      stat = 1|8;
+    }
+  } 
 
   gmem += (Y0 * cam->ScreenWidth);
-  if (((dX1-dX2)*dY)>>16) dCL = ((dC1-dC2)*dY)/(((dX1-dX2)*dY)>>16);
-  else if ((X2-X1)>>16) dCL = (C2-C1)/(((X2-X1)>>16)+2);
-  else dCL = 0;
+  zbuf += (Y0 * cam->ScreenWidth);
 
-  do {
-    if (Y0 == Y1) {
-      dY = (sp[2]->scry>>16) - (sp[1]->scry>>16);
-      if (!dY) return;
-      dC1 = (sp[2]->Shade*nc + bc - C1) / dY;
-      dX1 = (sp[2]->scrx - X1) / dY;
-      dX2 = (sp[2]->scrx - X2) / dY;
+  XL1 = (((dX1-dX2)*dY+32768)>>16);
+  if (XL1) {
+    dCL = ((dC1-dC2)*dY)/XL1;
+    dZL = ((dZ1-dZ2)*dY)/XL1;
+  } else {
+    XL1 = ((X2-X1+32768)>>16);
+    if (XL1) {
+      dCL = (C2-C1)/XL1;
+      dZL = (Z2-Z1)/XL1;
     }
-    if (Y0 >= cam->ClipTop) {
-      CL = C1;
-      XL1 = (X1+32768)>>16;
-      XL2 = (X2+32768)>>16;
-      if (XL1 < cam->ClipLeft) {
-        CL += dCL*(cam->ClipLeft-XL1);
-        XL1 = cam->ClipLeft;  
-      }
-      XL2 = plMin(cam->ClipRight, XL2);
-      if ((XL2-XL1) > 0) {
-        if (slb) {
-          if (XL1 < *(slb + (Y0<<2))) *(slb + (Y0<<2)) = XL1;
-          if (XL2 > *(slb + (Y0<<2) + 1)) *(slb + (Y0<<2) + 1) = XL2;
+  }
+
+  while (Y0 < Y2) {
+    if (Y0 == Y1) {
+      dY = Y2 - ((TriFace->Scry[i1]+32768)>>16);
+      if (dY) {
+        dZ1 = (Z3-Z1)/dY;
+        dC1 = (C3-C1) / dY;
+        if (stat & 1) {
+          X1 = TriFace->Scrx[i1];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
         }
-        XL2 -= XL1; 
-        gmem+=XL1; 
-        XL1 += XL2;
-        do {
-          *gmem++ = CL>>16;
-          CL += dCL;
-        }  while (--XL2);
-        gmem -= XL1;
+        if (stat & 2) {
+          X2 = TriFace->Scrx[i1];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
+        }
+        if (stat & 4) {
+          X1 = TriFace->Scrx[i0];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
+        if (stat & 8) {
+          X2 = TriFace->Scrx[i0];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
       }
+    }
+    CL = C1;
+    XL1 = (X1+32768)>>16;
+    XL2 = (X2+32768)>>16;
+    ZL = Z1;
+    XL2 -= XL1; 
+    if (XL2 > 0) {
+      gmem += XL1; 
+      zbuf += XL1;
+      XL1 += XL2;
+      if (zb) do {
+          if (*zbuf < ZL) {
+            *zbuf = ZL;
+            *gmem = remap[CL>>16];
+          }
+          gmem++;
+          zbuf++;
+          ZL += dZL;
+          CL += dCL;
+        } while (--XL2);
+      else do {
+          *gmem++ = remap[CL>>16];
+          CL += dCL;
+        } while (--XL2);
+      gmem -= XL1;
+      zbuf -= XL1;
     }
     gmem += cam->ScreenWidth;
+    zbuf += cam->ScreenWidth;
     X1 += dX1;
     X2 += dX2; 
     C1 += dC1;
-  } while (++Y0 < Y2);
+    Z1 += dZ1;
+    Y0++;
+  }
 }

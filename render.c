@@ -1,231 +1,311 @@
 /******************************************************************************
-**                         Plush Version 1.0                                 **
-**                                                                           **
-**                       The Render Manager Code                             **
-**                                                                           **
-**             All code copyright (c) 1996-1997, Justin Frankel              **
+Plush Version 1.1
+render.c
+Rendering code: this includes transformation, lighting, etc
+All code copyright (c) 1996-1997, Justin Frankel
 ******************************************************************************/
-
-#include <math.h>
-#include <stdlib.h>
 
 #include "plush.h"
 
 typedef struct {
-  pl_FloatType zd;
-  pl_FaceType *face;
-} _faceInfoType;
+  pl_Float zd;
+  pl_Face *face;
+} _faceInfo;
 
-static pl_uInt32Type _numfaces;
-static _faceInfoType *_faces;
-static pl_FloatType _cMatrix[16];
-static pl_FloatType *_sl;
-static pl_FloatType *_l;
-static pl_sInt32Type _cx, _cy; 
-static pl_FloatType _fov;
-static pl_FloatType _swbig, _shbig;
-static pl_FloatType _adj_asp;
-static pl_LightType **_lights;
-static pl_uInt16Type _numlights;
-static pl_CameraType *_cam;
-static int _plSortFunc(const void *, const void *);
-static int _plRevSortFunc(const void *, const void *);
-static char _plFindClipStat(pl_sInt32Type, pl_sInt32Type);
-static void _plRenderObject(pl_ObjectType *, pl_FloatType *, pl_FloatType *);
+#define plMatrixApply(m,x,y,z,outx,outy,outz) \
+      *( outx ) = ( x )*( m )[0] + ( y )*( m )[1] + ( z )*( m )[2] + ( m )[3];\
+      *( outy ) = ( x )*( m )[4] + ( y )*( m )[5] + ( z )*( m )[6] + ( m )[7];\
+      *( outz ) = ( x )*( m )[8] + ( y )*( m )[9] + ( z )*( m )[10] + ( m )[11]
 
-void plRenderBegin(pl_CameraType *Camera) {
-  pl_FloatType tempMatrix[16];
+#define plDotProduct(x1,y1,z1,x2,y2,z2) \
+      ((( x1 )*( x2 ))+(( y1 )*( y2 ))+(( z1 )*( z2 )))
+
+#define plNormalizeVector(x,y,z) { \
+  register pl_Float length; \
+  length = (*( x ))*(*( x ))+(*( y ))*(*( y ))+(*( z ))*(*( z )); \
+  if (length > 0.0000000001) { \
+    length = sqrt(length); \
+    *( x ) /= length; \
+    *( y ) /= length; \
+    *( z ) /= length; \
+  } \
+}
+
+static pl_uInt32 _numfaces;
+static _faceInfo *_faces;
+
+static pl_Float _cMatrix[16];
+static pl_Float *_l;
+static pl_uInt32 _numlights;
+static pl_Light **_lights;
+static pl_Cam *_cam;
+static pl_sInt32 _cx, _cy; 
+static pl_Float _fov;
+static pl_Float _adj_asp;
+static int _SortFunc(const void *, const void *);
+static int _RevSortFunc(const void *, const void *);
+static void _RenderObj(pl_Obj *, pl_Float *, pl_Float *);
+
+void plRenderBegin(pl_Cam *Camera) {
+  pl_Float tempMatrix[16];
   _cam = Camera;
   _numlights = 0;
   _numfaces = 0;
-  plMatrixRotate(_cMatrix,2,-Camera->Ya);
-  plMatrixRotate(tempMatrix,1,-Camera->Xa);
-  plMatrixMultiply(_cMatrix,tempMatrix);
-  plMatrixRotate(tempMatrix,3,-Camera->Za);
-  plMatrixMultiply(_cMatrix,tempMatrix);
-  _cx = Camera->CenterX<<16;
-  _cy = Camera->CenterY<<16;
-  _shbig = Camera->ScreenHeight * 20.0;
-  _swbig = Camera->ScreenWidth * 20.0;
+  _adj_asp = 1.0 / Camera->AspectRatio;
   _fov = plMin(plMax(Camera->Fov,1),179);
   _fov = (1.0/tan(_fov*(PL_PI/360.0)))*(Camera->ClipRight-Camera->ClipLeft);
-  _adj_asp = 1.0 / Camera->AspectRatio;
+  _cx = Camera->CenterX<<16;
+  _cy = Camera->CenterY<<16;
+  plMatrixRotate(_cMatrix,2,-Camera->Pan);
+  plMatrixRotate(tempMatrix,1,-Camera->Pitch);
+  plMatrixMultiply(_cMatrix,tempMatrix);
+  plMatrixRotate(tempMatrix,3,-Camera->Roll);
+  plMatrixMultiply(_cMatrix,tempMatrix);
+  plClipSetFrustum(_cam);
 }
 
-void plRenderLight(pl_LightType *light) {
+void plRenderLight(pl_Light *light) {
+  pl_Float *pl, xp, yp, zp;
   if (light->Type == PL_LIGHT_NONE) return;
   _numlights ++;
-  _l = (pl_FloatType *) realloc(_l,_numlights*sizeof(pl_FloatType)*3);
-  _sl = (pl_FloatType *) realloc(_sl,_numlights*sizeof(pl_FloatType)*3);
-  _lights = (pl_LightType **) 
-             realloc(_lights, _numlights*sizeof(pl_LightType *));
-  if (light->Type == PL_LIGHT_VECTOR)
-    plMatrixApply(_cMatrix,light->Xp,light->Yp,light->Zp,
-      _l+(_numlights-1)*3,_l+(_numlights-1)*3+1,_l+(_numlights-1)*3+2);
-  if (light->Type == PL_LIGHT_POINT)
-    plMatrixApply(_cMatrix,light->Xp-_cam->Xp,light->Yp-_cam->Yp,
-                  light->Zp-_cam->Zp,_sl+(_numlights-1)*3,
-                  _sl+(_numlights-1)*3+1,_sl+(_numlights-1)*3+2);
+  _l = (pl_Float *) realloc(_l,_numlights*sizeof(pl_Float)*3);
+  _lights = (pl_Light **) realloc(_lights, _numlights*sizeof(pl_Light *));
+  pl = _l + (_numlights-1)*3;
+  if (light->Type == PL_LIGHT_VECTOR) {
+    xp = light->Xp;
+    yp = light->Yp;
+    zp = light->Zp;
+    plMatrixApply(_cMatrix,xp,yp,zp,pl,pl+1,pl+2);
+  } else if (light->Type & PL_LIGHT_POINT) {
+    xp = light->Xp-_cam->X;
+    yp = light->Yp-_cam->Y;
+    zp = light->Zp-_cam->Z;
+    plMatrixApply(_cMatrix,xp,yp,zp,pl,pl+1,pl+2);
+  }
   _lights[_numlights-1] = light;
 }
 
-static void _plRenderObject(pl_ObjectType *obj, pl_FloatType *basematrix, 
-                            pl_FloatType *bnmatrix) {
-  pl_uInt32Type i, x;
-  pl_FloatType nx = 0.0, ny = 0.0, nz = 0.0;
-  pl_FloatType tmp, tmp2;
-  pl_FloatType oMatrix[16], nMatrix[16], tempMatrix[16];
+static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
+  pl_uInt32 i, x, facepos;
+  pl_Float nx = 0.0, ny = 0.0, nz = 0.0;
+  pl_Float nx2, ny2, nz2;
+  pl_Float tmp, tmp2;
+  pl_uChar z2, z1, x1, x2, y1, y2;
+  pl_Float oMatrix[16], nMatrix[16], tempMatrix[16];
 
-  pl_VertexType *vertex;
-  pl_FaceType *face;
-  pl_LightType *light;
+  pl_Vertex *vertex;
+  pl_Face *face;
+  pl_Light *light;
 
-  plMatrixRotate(nMatrix,1,obj->Xa);
-  plMatrixRotate(tempMatrix,2,obj->Ya);
-  plMatrixMultiply(nMatrix,tempMatrix);
-  plMatrixRotate(tempMatrix,3,obj->Za);
-  plMatrixMultiply(nMatrix,tempMatrix);
+  if (obj->GenMatrix) {
+    plMatrixRotate(nMatrix,1,obj->Xa);
+    plMatrixRotate(tempMatrix,2,obj->Ya);
+    plMatrixMultiply(nMatrix,tempMatrix);
+    plMatrixRotate(tempMatrix,3,obj->Za);
+    plMatrixMultiply(nMatrix,tempMatrix);
+    memcpy(oMatrix,nMatrix,sizeof(pl_Float)*16);
+  } else memcpy(nMatrix,obj->RotMatrix,sizeof(pl_Float)*16);
 
-  memcpy(oMatrix,nMatrix,sizeof(pl_FloatType)<<4);
   if (bnmatrix) plMatrixMultiply(nMatrix,bnmatrix);
 
-  plMatrixTranslate(tempMatrix, obj->Xp, obj->Yp, obj->Zp);
-  plMatrixMultiply(oMatrix,tempMatrix);
-  if (basematrix) plMatrixMultiply(oMatrix,basematrix);
+  if (obj->GenMatrix) {
+    plMatrixTranslate(tempMatrix, obj->Xp, obj->Yp, obj->Zp);
+    plMatrixMultiply(oMatrix,tempMatrix);
+  } else memcpy(oMatrix,obj->Matrix,sizeof(pl_Float)*16);
+  if (bmatrix) plMatrixMultiply(oMatrix,bmatrix);
 
   for (i = 0; i < PL_MAX_CHILDREN; i ++)
-    if (obj->Children[i]) _plRenderObject(obj->Children[i],oMatrix,nMatrix);
+    if (obj->Children[i]) _RenderObj(obj->Children[i],oMatrix,nMatrix);
   if (!obj->NumFaces || !obj->NumVertices) return;
 
-  plMatrixTranslate(tempMatrix, -_cam->Xp, -_cam->Yp, -_cam->Zp);
+  plMatrixTranslate(tempMatrix, -_cam->X, -_cam->Y, -_cam->Z);
   plMatrixMultiply(oMatrix,tempMatrix);
   plMatrixMultiply(oMatrix,_cMatrix);
   plMatrixMultiply(nMatrix,_cMatrix);
   
   x = obj->NumVertices;
-  face = obj->Faces;
   vertex = obj->Vertices;
 
   do {
-    plMatrixApply(oMatrix,vertex->x,vertex->y,vertex->z, &nx, &ny, &nz); 
-    vertex->xformedx = nx; 
-    vertex->xformedy = ny; 
-    vertex->xformedz = nz;
-    if (nz > _cam->ClipFront && nz < _cam->ClipBack) {
-      tmp2 = _fov / nz;
-      tmp = tmp2*nx;
-      tmp2 *= ny;
-      if (tmp < _swbig && tmp > -_swbig &&
-          tmp2 < _shbig && tmp2 > -_shbig) {
-        vertex->scrx = _cx + ((pl_sInt32Type)(tmp*65536.0));
-        vertex->scry = _cy - ((pl_sInt32Type)(tmp2*_adj_asp*65536.0));
-      } else vertex->scrx = 1<<30;
-    } else vertex->scrx = 1<<30;
-    if (_cam->EnvEnabled || _cam->GouraudEnabled)
-      plMatrixApply(nMatrix,vertex->nx,vertex->ny,vertex->nz, &nx,&ny,&nz);
-    if (_cam->EnvEnabled) {
-      vertex->eMappingU = 32768 + (nx*32768.0);
-      vertex->eMappingV = 32768 + (ny*32768.0);
-    } 
-    if (_cam->GouraudEnabled) {
-      tmp = vertex->sLighting;
-      for (i = 0; i < _numlights ; i++) {
-        light = _lights[i];
-        if (light->Type == PL_LIGHT_POINT) {
-          _l[i*3] = _sl[i*3] - vertex->xformedx; 
-          _l[i*3+1] = _sl[i*3+1] - vertex->xformedy; 
-          _l[i*3+2] = _sl[i*3+2] - vertex->xformedz;
-          plNormalizeVector(_l+i*3,_l+i*3+1,_l+i*3+2);
-        }
-        tmp2 = plDotProduct(nx,ny,nz,_l[i*3],_l[i*3+1],_l[i*3+2])
-               * light->Intensity;
-        if (tmp2 > 0.0) tmp += tmp2;
-        else if (obj->BackfaceIllumination) tmp -= tmp2;
-      }
-      vertex->Shade = plMin(tmp,1.0);
-    }
+    plMatrixApply(oMatrix,vertex->x,vertex->y,vertex->z, 
+                  &vertex->xformedx, &vertex->xformedy, &vertex->xformedz); 
+    plMatrixApply(nMatrix,vertex->nx,vertex->ny,vertex->nz,
+                  &vertex->xformednx,&vertex->xformedny,&vertex->xformednz);
     vertex++;
   } while (--x);
+
+  face = obj->Faces;
+  facepos = _numfaces;
+
+  _numfaces += obj->NumFaces;
+  _faces = (_faceInfo *) realloc(_faces,_numfaces*sizeof(_faceInfo));
   x = obj->NumFaces;
-  _faces = 
-    (_faceInfoType *) realloc(_faces,(_numfaces+x)*sizeof(_faceInfoType));
+
   do {
     if (obj->BackfaceCull || face->Material->_st & PL_SHADE_FLAT)
       plMatrixApply(nMatrix,face->nx,face->ny,face->nz,&nx,&ny,&nz);
-    if (!(face->Vertices[0]->scrx == 1<<30 ||
-          face->Vertices[1]->scrx == 1<<30 ||
-          face->Vertices[2]->scrx == 1<<30)) {
-      char c1,c2,c3;
-      c1 = _plFindClipStat(face->Vertices[0]->scrx,face->Vertices[0]->scry);
-      c2 = _plFindClipStat(face->Vertices[1]->scrx,face->Vertices[1]->scry);
-      c3 = _plFindClipStat(face->Vertices[2]->scrx,face->Vertices[2]->scry);
-      if (!(c1|c2|c3) || !(c1&c2&c3))
-        if (!obj->BackfaceCull || 
-            (plDotProduct(nx,ny,nz, 
-                  face->Vertices[0]->xformedx, face->Vertices[0]->xformedy,
-                  face->Vertices[0]->xformedz) < -0.001)) {
-        tmp = face->sLighting = 0.0;
-        if (face->Material->_st & PL_SHADE_FLAT) {
-          for (i = 0; i < _numlights; i ++) {
-            light = _lights[i];
-            if (light->Type == PL_LIGHT_POINT) {
-              _l[i*3+0] = _sl[i*3+0] - face->Vertices[0]->xformedx; 
-              _l[i*3+1] = _sl[i*3+1] - face->Vertices[0]->xformedy; 
-              _l[i*3+2] = _sl[i*3+2] - face->Vertices[0]->xformedz;
-              plNormalizeVector(_l+i*3,_l+i*3+1,_l+i*3+2);
-            }
-            tmp2= plDotProduct(nx,ny,nz,_l[i*3],_l[i*3+1],_l[i*3+2])
+    if (!obj->BackfaceCull || (plDotProduct(nx,ny,nz, 
+        face->Vertices[0]->xformedx, face->Vertices[0]->xformedy,
+        face->Vertices[0]->xformedz) < 0.0000001)) {
+      if (_cam->ClipBack > 0.0) 
+        z1 = (face->Vertices[0]->xformedz <= _cam->ClipBack) +
+           (face->Vertices[1]->xformedz <= _cam->ClipBack) +
+           (face->Vertices[2]->xformedz <= _cam->ClipBack);
+      else z1 = 3;
+      z2 = (face->Vertices[0]->xformedz >= 0) +
+         (face->Vertices[1]->xformedz >= 0) +
+         (face->Vertices[2]->xformedz >= 0);
+     tmp = (_cam->ClipRight-_cam->CenterX);
+      x1 = (face->Vertices[0]->xformedx*_fov<=tmp*face->Vertices[0]->xformedz) +
+           (face->Vertices[1]->xformedx*_fov<=tmp*face->Vertices[1]->xformedz) +
+           (face->Vertices[2]->xformedx*_fov<=tmp*face->Vertices[2]->xformedz);
+     tmp = (_cam->ClipLeft-_cam->CenterX);
+      x2 = (face->Vertices[0]->xformedx*_fov>=tmp*face->Vertices[0]->xformedz) +
+           (face->Vertices[1]->xformedx*_fov>=tmp*face->Vertices[1]->xformedz) +
+           (face->Vertices[2]->xformedx*_fov>=tmp*face->Vertices[2]->xformedz);
+      tmp = _fov*_adj_asp;
+      tmp2 = (_cam->ClipBottom-_cam->CenterY);
+      y1 = (face->Vertices[0]->xformedy*tmp<=tmp2*face->Vertices[0]->xformedz) +
+           (face->Vertices[1]->xformedy*tmp<=tmp2*face->Vertices[1]->xformedz) +
+           (face->Vertices[2]->xformedy*tmp<=tmp2*face->Vertices[2]->xformedz);
+      tmp2 = (_cam->ClipTop-_cam->CenterY);
+      y2 = (face->Vertices[0]->xformedy*tmp>=tmp2*face->Vertices[0]->xformedz) +
+           (face->Vertices[1]->xformedy*tmp>=tmp2*face->Vertices[1]->xformedz) +
+           (face->Vertices[2]->xformedy*tmp>=tmp2*face->Vertices[2]->xformedz);
+      if (z2 && z1 && x1 && x2 && y1 && y2) {
+        if (face->Material->_st & (PL_SHADE_FLAT|PL_SHADE_FLAT_DISTANCE)) {
+          tmp = face->sLighting;
+          if (face->Material->_st & PL_SHADE_FLAT) {
+            for (i = 0; i < _numlights; i ++) {
+              tmp2 = 0.0;
+              light = _lights[i];
+              if (light->Type & PL_LIGHT_POINT_ANGLE) {
+                nx2 = _l[i*3+0] - face->Vertices[0]->xformedx; 
+                ny2 = _l[i*3+1] - face->Vertices[0]->xformedy; 
+                nz2 = _l[i*3+2] - face->Vertices[0]->xformedz;
+                plNormalizeVector(&nx2,&ny2,&nz2);
+                tmp2 = plDotProduct(nx,ny,nz,nx2,ny2,nz2)*light->Intensity;
+              } 
+              if (light->Type & PL_LIGHT_POINT_DISTANCE) {
+                nx2 = _l[i*3+0] - face->Vertices[0]->xformedx; 
+                ny2 = _l[i*3+1] - face->Vertices[0]->xformedy; 
+                nz2 = _l[i*3+2] - face->Vertices[0]->xformedz;
+                if (light->Type & PL_LIGHT_POINT_ANGLE) {
+                   nx2 = (1.0 - 0.5*((nx2*nx2+ny2*ny2+nz2*nz2)/
+                           light->HalfDistSquared));
+                  tmp2 *= plMax(0,plMin(1.0,nx2))*light->Intensity;
+                } else { 
+                  tmp2 = (1.0 - 0.5*((nx2*nx2+ny2*ny2+nz2*nz2)/
+                    light->HalfDistSquared));
+                  tmp2 = plMax(0,plMin(1.0,tmp2))*light->Intensity;
+                }
+              } 
+              if (light->Type == PL_LIGHT_VECTOR) 
+                tmp2 = plDotProduct(nx,ny,nz,_l[i*3],_l[i*3+1],_l[i*3+2])
                   * light->Intensity;
-            if (tmp2 > 0.0) tmp += tmp2;
-            else if (obj->BackfaceIllumination) tmp -= tmp2;
-          }
-        }
-        face->Shade = plMin(tmp,1.0);
-        _faces[_numfaces].zd = face->Vertices[0]->xformedz+
-                               face->Vertices[1]->xformedz+
-                               face->Vertices[2]->xformedz;
-        _faces[_numfaces].face = face;
-        _numfaces++;
-      } 
-    }
+              if (tmp2 > 0.0) tmp += tmp2;
+              else if (obj->BackfaceIllumination) tmp -= tmp2;
+            } /* End of light loop */ 
+          } /* End of flat shading if */
+          if (face->Material->_st & PL_SHADE_FLAT_DISTANCE)
+            tmp += 1.0-(face->Vertices[0]->xformedz+face->Vertices[1]->xformedz+
+                        face->Vertices[2]->xformedz) /
+                       (face->Material->FadeDist*3.0);
+          face->fShade = tmp;
+        } else face->fShade = 0.0; /* End of flatmask lighting if */
+        if (face->Material->_ft & PL_FILL_ENVIRONMENT) {
+          face->eMappingU[0] = 32768 + (face->Vertices[0]->xformednx*32768.0);
+          face->eMappingV[0] = 32768 - (face->Vertices[0]->xformedny*32768.0);
+          face->eMappingU[1] = 32768 + (face->Vertices[1]->xformednx*32768.0);
+          face->eMappingV[1] = 32768 - (face->Vertices[1]->xformedny*32768.0);
+          face->eMappingU[2] = 32768 + (face->Vertices[2]->xformednx*32768.0);
+          face->eMappingV[2] = 32768 - (face->Vertices[2]->xformedny*32768.0);
+        } 
+        if (face->Material->_st &(PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE)) {
+          register pl_uChar a;
+          for (a = 0; a < 3; a ++) {
+            tmp = face->vsLighting[a];
+            if (face->Material->_st & PL_SHADE_GOURAUD) {
+              for (i = 0; i < _numlights ; i++) {
+                tmp2 = 0.0;
+                light = _lights[i];
+                if (light->Type & PL_LIGHT_POINT_ANGLE) {
+                  nx = _l[i*3] - face->Vertices[a]->xformedx; 
+                  ny = _l[i*3+1] - face->Vertices[a]->xformedy; 
+                  nz = _l[i*3+2] - face->Vertices[a]->xformedz;
+                  plNormalizeVector(&nx,&ny,&nz);
+                  tmp2 = plDotProduct(face->Vertices[a]->xformednx,
+                                      face->Vertices[a]->xformedny,
+                                      face->Vertices[a]->xformednz,
+                                      nx,ny,nz) * light->Intensity;
+                } 
+                if (light->Type & PL_LIGHT_POINT_DISTANCE) {
+                  nx = _l[i*3+0] - face->Vertices[a]->xformedx; 
+                  ny = _l[i*3+1] - face->Vertices[a]->xformedy; 
+                  nz = _l[i*3+2] - face->Vertices[a]->xformedz;
+                  if (light->Type & PL_LIGHT_POINT_ANGLE) {
+                     nx = (1.0 - 0.5*((nx*nx+ny*ny+nz*nz)/
+                           light->HalfDistSquared));
+                     tmp2 *= plMax(0,plMin(1.0,nx))*light->Intensity;
+                  } else {
+                    tmp2 = (1.0 - 0.5*((nx2*nx2+ny2*ny2+nz2*nz2)/
+                      light->HalfDistSquared));
+                    tmp2 = plMax(0,plMin(1.0,tmp2))*light->Intensity;
+                  }
+                }
+                if (light->Type == PL_LIGHT_VECTOR)
+                  tmp2 = plDotProduct(face->Vertices[a]->xformednx,
+                                      face->Vertices[a]->xformedny,
+                                      face->Vertices[a]->xformednz,
+                                      _l[i*3],_l[i*3+1],_l[i*3+2])
+                                        * light->Intensity;
+                if (tmp2 > 0.0) tmp += tmp2;
+                else if (obj->BackfaceIllumination) tmp -= tmp2;
+              } /* End of light loop */
+            } /* End of gouraud shading if */
+            if (face->Material->_st & PL_SHADE_GOURAUD_DISTANCE)
+              tmp += 1.0-face->Vertices[a]->xformedz/face->Material->FadeDist;
+            face->Shades[a] = tmp;
+          } /* End of vertex loop for */ 
+        } /* End of gouraud shading mask if */
+        _faces[facepos].zd = face->Vertices[0]->xformedz+
+        face->Vertices[1]->xformedz+face->Vertices[2]->xformedz;
+        _faces[facepos++].face = face;
+      } /* Is it in our area Check */
+    } /* Backface Check */
+    _numfaces = facepos;
     face++;
-  } while (--x);
+  } while (--x); /* Face loop */
 }
 
-void plRenderObject(pl_ObjectType *obj) {
-  _plRenderObject(obj,0,0);
+void plRenderObj(pl_Obj *obj) {
+  _RenderObj(obj,0,0);
 }
 
 void plRenderEnd() {
-  _faceInfoType *f;
+  _faceInfo *f;
   if (_cam->Sort > 0) 
-    qsort(_faces,_numfaces,sizeof(_faceInfoType),_plSortFunc); 
+    qsort(_faces,_numfaces,sizeof(_faceInfo),_SortFunc); 
   else if (_cam->Sort < 0) 
-    qsort(_faces,_numfaces,sizeof(_faceInfoType),_plRevSortFunc); 
+    qsort(_faces,_numfaces,sizeof(_faceInfo),_RevSortFunc); 
   f = _faces;
-  while (_numfaces--) { plPutFace(_cam,f->face); f++; }
-  free(_faces); free(_sl); free(_l); free(_lights);
-  _sl = _l = 0;
+  while (_numfaces--) {
+    plClipRenderFace(f->face);
+    f++;
+  }
+  if (_faces) free(_faces); 
+  if (_l) free(_l); 
+  if (_lights) free(_lights);
+  _l = 0;
   _faces = 0;
   _lights = 0;
   _numlights = 0;
 }
 
-static char _plFindClipStat(pl_sInt32Type x, pl_sInt32Type y) {
-  char c =0;
-  x >>= 16;
-  y >>= 16;
-  if (x < _cam->ClipLeft) c |= 1;
-  if (x > _cam->ClipRight) c |= 2;
-  if (y > _cam->ClipBottom) c |= 4;
-  if (y < _cam->ClipTop) c |= 8;
-  return c;
+static int _SortFunc(const void *a, const void *b) {
+  return ((((_faceInfo *)b)->zd > ((_faceInfo *)a)->zd) ? 1 : -1);
 }
 
-static int _plSortFunc(const void *a, const void *b) {
-  return ((((_faceInfoType *)b)->zd > ((_faceInfoType *)a)->zd) ? 1 : -1);
-}
-
-static int _plRevSortFunc(const void *a, const void *b) {
-  return ((((_faceInfoType *)b)->zd < ((_faceInfoType *)a)->zd) ? 1 : -1);
+static int _RevSortFunc(const void *a, const void *b) {
+  return ((((_faceInfo *)b)->zd < ((_faceInfo *)a)->zd) ? 1 : -1);
 }

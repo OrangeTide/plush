@@ -1,383 +1,441 @@
 /******************************************************************************
-**                         Plush Version 1.0                                 **
-**                                                                           **
-**              Perspective Correct Texture Mapping Rasterizers              **
-**                                                                           **
-**             All code copyright (c) 1996-1997, Justin Frankel              **
+Plush Version 1.1
+pf_ptex.c
+Perspective Correct Texture Mapping Rasterizers
+All code copyright (c) 1996-1997, Justin Frankel
 ******************************************************************************/
 
 #include "plush.h"
 #include "putface.h"
 
-#define PL_PBITS 12
+void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
+  pl_uChar i0, i1, i2;
+  pl_uChar *gmem = cam->frameBuffer;
+  pl_uChar *remap = TriFace->Material->_ReMapTable;
+  pl_ZBuffer *zbuf = cam->zBuffer;
+  pl_Float MappingU1, MappingU2, MappingU3;
+  pl_Float MappingV1, MappingV2, MappingV3;
+  pl_sInt32 MappingU_AND, MappingV_AND;
+  pl_uChar *texture;
+  pl_uChar vshift;
+  pl_uInt16 bc;
+  pl_Texture *Texture;
 
-void plPF_PTexF(pl_CameraType *cam, pl_FaceType *TriFace) {
-  unsigned char bc;
-  unsigned char *gmem = cam->frameBuffer;
-  pl_VertexType *sp[3];
-  pl_FloatType MappingU1, MappingU2, MappingU3;
-  pl_FloatType MappingV1, MappingV2, MappingV3;
-  pl_sInt32Type MappingU_AND, MappingV_AND;
-  unsigned char *texture;
-  char twidth16minus;
-  pl_sInt32Type clr;
-  pl_uInt32Type twidthand;
-  unsigned char *addtable;
-  pl_TextureType *Texture;
+  pl_uChar n, nm, nmb;
+  pl_Float U1,V1,U2,V2,dU1=0,dU2=0,dV1=0,dV2=0,dUL=0,dVL=0,UL,VL;
+  pl_sInt32 iUL, iVL, idUL=0, idVL=0, iULnext, iVLnext;
 
-  unsigned char n, nm, nmb;
-  pl_FloatType U1,V1,U2,V2,dU1,dU2,dV1,dV2,dUL,dVL,UL,VL,nmdUL,nmdVL;
-  pl_sInt32Type iUL, iVL, idUL, idVL, iULnext, iVLnext;
+  pl_sInt32 scrwidth = cam->ScreenWidth;
+  pl_sInt32 X1, X2, dX1=0, dX2=0, XL1, Xlen;
+  pl_ZBuffer Z1, dZ1=0, dZ2=0, Z2, dZL=0, ZL, pZL, pdZL;
+  pl_sInt32 Y1, Y2, Y0, dY;
+  pl_uChar stat;
 
-  pl_sInt32Type X1, X2, dX1, dX2, XL1, XL2;
-  pl_ZBufferType Z1, ZL, dZ1, dZ2, dZL, Z2;
-  pl_FloatType idZL, iZL;
-  pl_sInt32Type Y1, Y2, Y0, dY;
-
-  pl_uInt16Type *slb = cam->_ScanLineBuffer;
-  
-  Texture = TriFace->Material->Texture; 
-  clr = TriFace->Shade * 65536.0;
-  bc = TriFace->Material->_AddTable[plMin(65535,clr)>>8];
+  pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
+ 
+  if (TriFace->Material->Environment) Texture = TriFace->Material->Environment;
+  else Texture = TriFace->Material->Texture;
 
   if (!Texture) return;
   texture = Texture->Data;
-  addtable = TriFace->Material->_AddTable;
+  bc = TriFace->Material->_AddTable[8 + (pl_uInt)(TriFace->fShade*256.0)];
   nm = TriFace->Material->PerspectiveCorrect;
   nmb = 0; while (nm) { nmb++; nm >>= 1; }
-  nmb = plMin(5,nmb);
-  nm = 1 << nmb;
-  MappingV_AND = (1<<Texture->Height)-1;
+  nmb = plMin(6,nmb);
+  nm = 1<<nmb;
+  MappingV_AND = ((1<<Texture->Height)-1)<<Texture->Width;
   MappingU_AND = (1<<Texture->Width)-1;
-  twidth16minus = 16 - Texture->Width;
-  twidthand = (MappingV_AND << Texture->Width);
+  vshift = 16 - Texture->Width;
 
-  {
+  if (TriFace->Material->Environment) {
+    PUTFACE_SORT_ENV();
+  } else {
     PUTFACE_SORT_TEX();
   }
 
-  MappingU1 /= sp[0]->xformedz*(1<<PL_PBITS);
-  MappingV1 /= sp[0]->xformedz*(1<<PL_PBITS);
-  MappingU2 /= sp[1]->xformedz*(1<<PL_PBITS);
-  MappingV2 /= sp[1]->xformedz*(1<<PL_PBITS);
-  MappingU3 /= sp[2]->xformedz*(1<<PL_PBITS);
-  MappingV3 /= sp[2]->xformedz*(1<<PL_PBITS);
+  MappingU1 *= TriFace->Scrz[i0]/65536.0;
+  MappingV1 *= TriFace->Scrz[i0]/65536.0;
+  MappingU2 *= TriFace->Scrz[i1]/65536.0;
+  MappingV2 *= TriFace->Scrz[i1]/65536.0;
+  MappingU3 *= TriFace->Scrz[i2]/65536.0;
+  MappingV3 *= TriFace->Scrz[i2]/65536.0;
 
   U1 = U2 = MappingU1;
   V1 = V2 = MappingV1;
-  X2 = X1 = sp[0]->scrx;
-  Z2 = Z1 = 1/sp[0]->xformedz;
-  Y0 = sp[0]->scry>>16;
-  Y1 = sp[1]->scry>>16;
-  Y2 = sp[2]->scry>>16;
+  X2 = X1 = TriFace->Scrx[i0];
+  Z2 = Z1 = TriFace->Scrz[i0];
+  Y0 = (TriFace->Scry[i0]+32768)>>16;
+  Y1 = (TriFace->Scry[i1]+32768)>>16;
+  Y2 = (TriFace->Scry[i2]+32768)>>16;
 
-  if (Y2==Y0) Y2++;
+  dY = Y2-Y0;
+  if (dY) {
+    dX2 = (TriFace->Scrx[i2] - X1) / dY;
+    dZ2 = (TriFace->Scrz[i2] - Z1) / dY;
+    dU2 = (MappingU3 - U1) / dY;
+    dV2 = (MappingV3 - V1) / dY;
+  }
   dY = Y1-Y0;
-  dX1 = (sp[1]->scrx - X1) / (dY ? dY : 1);
-  dU1 = (MappingU2 - U1) / (dY ? dY : 1);
-  dV1 = (MappingV2 - V1) / (dY ? dY : 1);
-  dZ1 = (1/sp[1]->xformedz - Z1) / (dY ? dY : 1);
-  dX2 = (sp[2]->scrx - X1) / (Y2-Y0);
-  dU2 = (MappingU3 - U1) / (Y2-Y0);
-  dV2 = (MappingV3 - V1) / (Y2-Y0);
-  dZ2 = (1/sp[2]->xformedz - Z1) / (Y2-Y0);
-
-  if (!dY) {
-    if (sp[1]->scrx > X1) {
-      X2 = sp[1]->scrx;
-      Z2 = 1/sp[1]->xformedz;
+  if (dY) {
+    dX1 = (TriFace->Scrx[i1] - X1) / dY;
+    dZ1 = (TriFace->Scrz[i1] - Z1) / dY;
+    dU1 = (MappingU2 - U1) / dY;
+    dV1 = (MappingV2 - V1) / dY;
+    if (dX2 < dX1) {
+      XL1 = dX2; dX2 = dX1; dX1 = XL1;
+      dUL = dU1; dU1 = dU2; dU2 = dUL;
+      dVL = dV1; dV1 = dV2; dV2 = dVL;
+      dZL = dZ1; dZ1 = dZ2; dZ2 = dZL;
+      stat = 2;
+    } else stat = 1;
+  } else {
+    if (TriFace->Scrx[i1] > X1) {
+      X2 = TriFace->Scrx[i1];
+      Z2 = TriFace->Scrz[i1];
       U2 = MappingU2;
       V2 = MappingV2;
+      stat = 2|4;
     } else {
-      X1 = sp[1]->scrx;
-      Z1 = 1/sp[1]->xformedz;
+      X1 = TriFace->Scrx[i1];
+      Z1 = TriFace->Scrz[i1];
       U1 = MappingU2;
       V1 = MappingV2;
+      stat = 1|8;
     }
-  } else if (dX2 < dX1) {
-    dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
-    dUL = dU1; dU1 = dU2; dU2 = dUL;
-    dVL = dV1; dV1 = dV2; dV2 = dVL;
-    dZL = dZ1; dZ1 = dZ2; dZ2 = dZL;
-  }
-
-
-  if (Y0 >= cam->ClipBottom) return;
-  Y2 = plMin(cam->ClipBottom,Y2);
+  } 
 
   gmem += (Y0 * cam->ScreenWidth);
+  zbuf += (Y0 * cam->ScreenWidth);
 
-  if (((dX1-dX2)*dY)>>16) {
-    dUL = ((dU1-dU2)*dY)/(((dX1-dX2)*dY)>>16);
-    dVL = ((dV1-dV2)*dY)/(((dX1-dX2)*dY)>>16);
-    dZL = ((dZ1-dZ2)*dY)/(((dX1-dX2)*dY)>>16);
-  } else if ((X2-X1)>>16) {
-    dUL = (U2-U1)/((X2-X1)>>16);
-    dVL = (V2-V1)/((X2-X1)>>16);
-    dZL = (Z2-Z1)/((X2-X1)>>16);
-  } else dUL = dVL = dZL = 0;
-
-  nmdUL = dUL*nm;
-  nmdVL = dVL*nm;
-
-  do {
-    if (Y0 == Y1) {
-      dY = (sp[2]->scry>>16)-(sp[1]->scry>>16);
-      if (!dY) return;
-      dX1 = (sp[2]->scrx-X1)/dY;
-      dX2 = (sp[2]->scrx-X2)/dY;
-      dV1 = (MappingV3 - V1) / dY;
-      dU1 = (MappingU3 - U1) / dY;
-      dZ1 = (1/sp[2]->xformedz-Z1)/dY;
+  XL1 = ((dX1-dX2)*dY+32768)>>16;
+  if (XL1) {
+    dUL = ((dU1-dU2)*dY)/XL1;
+    dVL = ((dV1-dV2)*dY)/XL1;
+    dZL = ((dZ1-dZ2)*dY)/XL1;
+  } else {
+    XL1 = ((X2-X1+32768)>>16);
+    if (XL1) {
+      dUL = (U2-U1)/XL1;
+      dVL = (V2-V1)/XL1;
+      dZL = (Z2-Z1)/XL1;
     }
-    if (Y0 >= cam->ClipTop) {
-      XL1 = (X1+32768)>>16;
-      XL2 = (X2+32768)>>16;
-      ZL = Z1;
+  }
+
+  pdZL = dZL * nm;
+  dUL *= nm;
+  dVL *= nm;
+
+  while (Y0 < Y2) {
+    if (Y0 == Y1) {
+      dY = Y2-((TriFace->Scry[i1]+32768)>>16);
+      if (dY) {
+        if (stat & 1) {
+          X1 = TriFace->Scrx[i1];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
+        }
+        if (stat & 2) {
+          X2 = TriFace->Scrx[i1];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
+        }
+        if (stat & 4) {
+          X1 = TriFace->Scrx[i0];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
+        if (stat & 8) {
+          X2 = TriFace->Scrx[i0];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
+        dZ1 = (TriFace->Scrz[i2]-Z1)/dY;
+        dV1 = (MappingV3 - V1) / dY;
+        dU1 = (MappingU3 - U1) / dY;
+      }
+    }
+    XL1 = (X1+32768)>>16;
+    Xlen = ((X2+32768)>>16) - XL1;
+    if (Xlen > 0) {
+      register pl_Float t;
+      pZL = ZL = Z1;
       UL = U1;
       VL = V1;
-      if (XL1 < cam->ClipLeft) {  
-        UL += dUL*(cam->ClipLeft-XL1);
-        VL += dVL*(cam->ClipLeft-XL1);
-        ZL += dZL*(cam->ClipLeft-XL1);
-        XL1 = cam->ClipLeft;
-      }
-      XL2 = plMin(cam->ClipRight, XL2);
-      if ((XL2-XL1) > 0) {
-        if (slb) {
-          if (XL1 < *(slb + (Y0<<2))) *(slb + (Y0<<2)) = XL1;
-          if (XL2 > *(slb + (Y0<<2) + 1)) *(slb + (Y0<<2) + 1) = XL2;
-        }
-        XL2 -= XL1;
-        gmem += XL1;
-        XL1 += XL2;
-        iZL = ZL;
-        idZL = dZL * nm;
-        idUL = idVL = 0;
-        iUL = iULnext = ((pl_sInt32Type) (UL/ZL)) << PL_PBITS;
-        iVL = iVLnext = ((pl_sInt32Type) (VL/ZL)) << PL_PBITS;
-        do {
-          register pl_FloatType t;
-          UL += nmdUL;
-          VL += nmdVL;
-          iUL = iULnext;
-          iVL = iVLnext;
-          iZL += idZL;
-          t = 1.0/iZL;
-          iULnext = ((pl_sInt32Type) (UL*t)) << PL_PBITS;
-          iVLnext = ((pl_sInt32Type) (VL*t)) << PL_PBITS;
-          idUL = (iULnext - iUL)>>nmb;
-          idVL = (iVLnext - iVL)>>nmb;
-          n = nm;
-          XL2 -= n; 
-          if (XL2 < 0) n += XL2;
-          do {
-            *gmem++ = bc + texture[((iUL>>16)&MappingU_AND) +
-                                   ((iVL>>twidth16minus)&twidthand)];
+      gmem += XL1;
+      zbuf += XL1;
+      XL1 += Xlen-scrwidth;
+      t = 65536.0/ZL;
+      iUL = iULnext = ((pl_sInt32) (UL*t));
+      iVL = iVLnext = ((pl_sInt32) (VL*t));
+      do {
+        UL += dUL;
+        VL += dVL;
+        iUL = iULnext;
+        iVL = iVLnext;
+        pZL += pdZL;
+        t = 65536.0/pZL;
+        iULnext = ((pl_sInt32) (UL*t));
+        iVLnext = ((pl_sInt32) (VL*t));
+        idUL = (iULnext - iUL)>>nmb;
+        idVL = (iVLnext - iVL)>>nmb;
+        n = nm;
+        Xlen -= n; 
+        if (Xlen < 0) n += Xlen;
+        if (zb) do {
+            if (*zbuf < ZL) {
+              *zbuf = ZL;
+              *gmem = remap[bc + texture[((iUL>>16)&MappingU_AND) +
+                                   ((iVL>>vshift)&MappingV_AND)]];
+            }
+            zbuf++;
+            gmem++;
+            ZL += dZL;
             iUL += idUL;
             iVL += idVL;
           } while (--n);
-        } while (XL2 > 0);
-        gmem -= XL1;
-      }
+        else do {
+            *gmem++ = remap[bc + texture[((iUL>>16)&MappingU_AND) +
+                                   ((iVL>>vshift)&MappingV_AND)]];
+            iUL += idUL;
+            iVL += idVL;
+          } while (--n);
+      } while (Xlen > 0);
+      gmem -= XL1;
+      zbuf -= XL1;
+    } else {
+      zbuf += cam->ScreenWidth;
+      gmem += cam->ScreenWidth;
     }
-    gmem += cam->ScreenWidth;
     Z1 += dZ1;
     U1 += dU1;
     V1 += dV1;
     X1 += dX1;
     X2 += dX2;
-  } while (++Y0 < Y2);
+    Y0++;
+  } 
 }
 
-void plPF_PTexG(pl_CameraType *cam, pl_FaceType *TriFace) {
-  pl_VertexType *sp[3];
-  unsigned char *gmem = cam->frameBuffer;
-  pl_FloatType MappingU1, MappingU2, MappingU3;
-  pl_FloatType MappingV1, MappingV2, MappingV3;
-  pl_sInt32Type MappingU_AND, MappingV_AND;
-  unsigned char *texture;
-  char twidth16minus;
-  pl_uInt32Type twidthand;
-  unsigned char *addtable;
-  pl_TextureType *Texture;
+void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
+  pl_uChar i0, i1, i2;
+  pl_Float MappingU1, MappingU2, MappingU3;
+  pl_Float MappingV1, MappingV2, MappingV3;
 
-  unsigned char n, nm, nmb;
-  pl_FloatType U1,V1,U2,V2,dU1,dU2,dV1,dV2,dUL,dVL,UL,VL,nmdUL,nmdVL;
-  pl_sInt32Type iUL, iVL, idUL, idVL, iULnext, iVLnext;
+  pl_Texture *Texture;
+  pl_Bool zb = (cam->zBuffer&&TriFace->Material->zBufferable) ? 1 : 0;
 
-  pl_sInt32Type X1, X2, dX1, dX2, XL1, XL2;
-  pl_sInt32Type C1, C2, dC1, dC2, OC2, OC3, CL, dCL;
-  pl_ZBufferType Z1, ZL, dZ1, dZ2, dZL, Z2;
-  pl_FloatType idZL, iZL;
-  pl_sInt32Type Y1, Y2, Y0, dY;
+  pl_uChar n, nm, nmb;
+  pl_sInt32 MappingU_AND, MappingV_AND;
+  pl_uChar vshift;
+  pl_uChar *texture;
+  pl_uInt16 *addtable;
+  pl_uChar *remap = TriFace->Material->_ReMapTable;
+  pl_sInt32 iUL, iVL, idUL, idVL, iULnext, iVLnext;
+  pl_Float U2,V2,dU2=0,dV2=0,dUL=0,dVL=0,UL,VL;
+  pl_sInt32 XL1, Xlen;
+  pl_sInt32 C2, dC2=0, CL, dCL=0;
+  pl_Float ZL, Z2, dZ2=0, dZL=0, pdZL, pZL;
 
-  pl_uInt16Type *slb = cam->_ScanLineBuffer;
-  
-  Texture = TriFace->Material->Texture;
+  pl_sInt32 Y2, dY;
+  pl_uChar stat;
+
+  /* Cache line */
+  pl_sInt32 Y0,Y1;
+  pl_sInt32 C1, dC1=0, X2, dX2=0, X1, dX1=0; 
+
+  /* Cache line */
+  pl_Float dU1=0, U1, dZ1=0, Z1, V1, dV1=0;
+  pl_sInt32 scrwidth = cam->ScreenWidth;
+  pl_uChar *gmem = cam->frameBuffer;
+  pl_ZBuffer *zbuf = cam->zBuffer;
+
+  if (TriFace->Material->Environment) Texture = TriFace->Material->Environment;
+  else Texture = TriFace->Material->Texture;
 
   if (!Texture) return;
   texture = Texture->Data;
-  addtable = TriFace->Material->_AddTable;
+  addtable = TriFace->Material->_AddTable+8;
   nm = TriFace->Material->PerspectiveCorrect;
   nmb = 0; while (nm) { nmb++; nm >>= 1; }
-  nmb = plMin(5,nmb);
-  nm = 1 << nmb;
-  MappingV_AND = (1<<Texture->Height)-1;
+  nmb = plMin(6,nmb);
+  nm = 1<<nmb;
+  MappingV_AND = ((1<<Texture->Height)-1)<<Texture->Width;
   MappingU_AND = (1<<Texture->Width)-1;
-  twidth16minus = 16 - Texture->Width;
-  twidthand = (MappingV_AND << Texture->Width);
+  vshift = 16 - Texture->Width;
 
-  {
+  if (TriFace->Material->Environment) {
+    PUTFACE_SORT_ENV();
+  } else {
     PUTFACE_SORT_TEX();
   }
 
-  MappingU1 /= sp[0]->xformedz*(1<<PL_PBITS);
-  MappingV1 /= sp[0]->xformedz*(1<<PL_PBITS);
-  MappingU2 /= sp[1]->xformedz*(1<<PL_PBITS);
-  MappingV2 /= sp[1]->xformedz*(1<<PL_PBITS);
-  MappingU3 /= sp[2]->xformedz*(1<<PL_PBITS);
-  MappingV3 /= sp[2]->xformedz*(1<<PL_PBITS);
+  MappingU1 *= TriFace->Scrz[i0]/65536.0;
+  MappingV1 *= TriFace->Scrz[i0]/65536.0;
+  MappingU2 *= TriFace->Scrz[i1]/65536.0;
+  MappingV2 *= TriFace->Scrz[i1]/65536.0;
+  MappingU3 *= TriFace->Scrz[i2]/65536.0;
+  MappingV3 *= TriFace->Scrz[i2]/65536.0;
+  TriFace->Shades[0] *= 65536.0;
+  TriFace->Shades[1] *= 65536.0;
+  TriFace->Shades[2] *= 65536.0;
 
-  C1 = C2 = sp[0]->Shade*65535.0;
-  OC2 = sp[1]->Shade*65535.0;
-  OC3 = sp[2]->Shade*65535.0;
+  C1 = C2 = TriFace->Shades[i0];
   U1 = U2 = MappingU1;
   V1 = V2 = MappingV1;
-  X2 = X1 = sp[0]->scrx;
-  Z2 = Z1 = 1/sp[0]->xformedz;
-  Y0 = sp[0]->scry>>16;
-  Y1 = sp[1]->scry>>16;
-  Y2 = sp[2]->scry>>16;
+  X2 = X1 = TriFace->Scrx[i0];
+  Z2 = Z1 = TriFace->Scrz[i0];
+  Y0 = (TriFace->Scry[i0]+32768)>>16;
+  Y1 = (TriFace->Scry[i1]+32768)>>16;
+  Y2 = (TriFace->Scry[i2]+32768)>>16;
 
-  if (Y2==Y0) Y2++;
+  dY = Y2-Y0;
+  if (dY) {
+    dX2 = (TriFace->Scrx[i2] - X1) / dY;
+    dZ2 = (TriFace->Scrz[i2] - Z1) / dY;
+    dC2 = (TriFace->Shades[i2] - C1) / dY;
+    dU2 = (MappingU3 - U1) / dY;
+    dV2 = (MappingV3 - V1) / dY;
+  }
   dY = Y1-Y0;
-  dX1 = (sp[1]->scrx - X1) / (dY ? dY : 1);
-  dU1 = (MappingU2 - U1) / (dY ? dY : 1);
-  dV1 = (MappingV2 - V1) / (dY ? dY : 1);
-  dC1 = (OC2 - C1) / (dY ? dY : 1);
-  dZ1 = (1/sp[1]->xformedz - Z1) / (dY ? dY : 1);
-  dX2 = (sp[2]->scrx - X1) / (Y2-Y0);
-  dU2 = (MappingU3 - U1) / (Y2-Y0);
-  dV2 = (MappingV3 - V1) / (Y2-Y0);
-  dZ2 = (1/sp[2]->xformedz - Z1) / (Y2-Y0);
-  dC2 = (OC3 - C1) / (Y2-Y0);
-
-  if (!dY) {
-    if (sp[1]->scrx > X1) {
-      X2 = sp[1]->scrx;
-      Z2 = 1/sp[1]->xformedz;
+  if (dY) {
+    dX1 = (TriFace->Scrx[i1] - X1) / dY;
+    dZ1 = (TriFace->Scrz[i1] - Z1) / dY;
+    dC1 = (TriFace->Shades[i1] - C1) / dY;
+    dU1 = (MappingU2 - U1) / dY;
+    dV1 = (MappingV2 - V1) / dY;
+    if (dX2 < dX1) {
+      dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
+      dUL = dU1; dU1 = dU2; dU2 = dUL;
+      dVL = dV1; dV1 = dV2; dV2 = dVL;
+      dZL = dZ1; dZ1 = dZ2; dZ2 = dZL;
+      dCL = dC1; dC1 = dC2; dC2 = dCL;
+      stat = 2;
+    } else stat = 1;
+  } else {
+    if (TriFace->Scrx[i1] > X1) {
+      X2 = TriFace->Scrx[i1];
+      Z2 = TriFace->Scrz[i1];
+      C2 = TriFace->Shades[i1];
       U2 = MappingU2;
       V2 = MappingV2;
-      C2 = OC2;
+      stat = 2|4;
     } else {
-      X1 = sp[1]->scrx;
-      Z1 = 1/sp[1]->xformedz;
+      X1 = TriFace->Scrx[i1];
+      Z1 = TriFace->Scrz[i1];
+      C1 = TriFace->Shades[i1];
       U1 = MappingU2;
       V1 = MappingV2;
-      C1 = OC2;
+      stat = 1|8;
     }
-  } else if (dX2 < dX1) {
-    dX2 ^= dX1; dX1 ^= dX2; dX2 ^= dX1;
-    dUL = dU1; dU1 = dU2; dU2 = dUL;
-    dVL = dV1; dV1 = dV2; dV2 = dVL;
-    dZL = dZ1; dZ1 = dZ2; dZ2 = dZL;
-    dC2 ^= dC1; dC1 ^= dC2; dC2 ^= dC1;
   }
 
+  gmem += (Y0 * scrwidth);
+  zbuf += (Y0 * scrwidth);
 
-  if (Y0 >= cam->ClipBottom) return;
-  Y2 = plMin(cam->ClipBottom,Y2);
-
-  gmem += (Y0 * cam->ScreenWidth);
-
-  if (((dX1-dX2)*dY)>>16) {
-    dUL = ((dU1-dU2)*dY)/(((dX1-dX2)*dY)>>16);
-    dVL = ((dV1-dV2)*dY)/(((dX1-dX2)*dY)>>16);
-    dZL = ((dZ1-dZ2)*dY)/(((dX1-dX2)*dY)>>16);
-    dCL = ((dC1-dC2)*dY)/(((dX1-dX2)*dY)>>16);
-  } else if ((X2-X1)>>16) {
-    dUL = (U2-U1)/((X2-X1)>>16);
-    dVL = (V2-V1)/((X2-X1)>>16);
-    dZL = (Z2-Z1)/((X2-X1)>>16);
-    dCL = (C2-C1)/(((X2-X1)>>16)+2);
-  } else { dUL = dVL = dZL = 0; dCL = 0; }
-
-  nmdUL = dUL*nm;
-  nmdVL = dVL*nm;
-
-  do {
-    if (Y0 == Y1) {
-      dY = (sp[2]->scry>>16)-(sp[1]->scry>>16);
-      if (!dY) return;
-      dX1 = (sp[2]->scrx-X1)/dY;
-      dX2 = (sp[2]->scrx-X2)/dY;
-      dV1 = (MappingV3 - V1) / dY;
-      dU1 = (MappingU3 - U1) / dY;
-      dC1 = (OC3-C1)/dY;
-      dZ1 = (1/sp[2]->xformedz-Z1)/dY;
+  XL1 = (((dX1-dX2)*dY+32768)>>16);
+  if (XL1) {
+    dUL = ((dU1-dU2)*dY)/XL1;
+    dVL = ((dV1-dV2)*dY)/XL1;
+    dZL = ((dZ1-dZ2)*dY)/XL1;
+    dCL = ((dC1-dC2)*dY)/XL1;
+  } else {
+    XL1 = ((X2-X1+32768)>>16);
+    if (XL1) {
+      dUL = (U2-U1)/XL1;
+      dVL = (V2-V1)/XL1;
+      dZL = (Z2-Z1)/XL1;
+      dCL = (C2-C1)/XL1;
     }
-    if (Y0 >= cam->ClipTop) {
-      XL1 = (X1+32768)>>16;
-      XL2 = (X2+32768)>>16;
+  }
+
+  pdZL = dZL * nm;
+  dUL *= nm;
+  dVL *= nm;
+  Y1 -= Y0;
+  Y0 = Y2-Y0;
+  while (Y0--) {
+    if (!Y1--) {
+      dY = Y2-((TriFace->Scry[i1]+32768)>>16); 
+      if (dY) {
+        if (stat & 1) {
+          X1 = TriFace->Scrx[i1];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
+        }
+        if (stat & 2) {
+          X2 = TriFace->Scrx[i1];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i1])/dY;
+        }
+        if (stat & 4) {
+          X1 = TriFace->Scrx[i0];
+          dX1 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
+        if (stat & 8) {
+          X2 = TriFace->Scrx[i0];
+          dX2 = (TriFace->Scrx[i2]-TriFace->Scrx[i0])/dY;
+        }
+        dZ1 = (TriFace->Scrz[i2]-Z1)/dY;
+        dC1 = (TriFace->Shades[i2]-C1)/dY;
+        dV1 = (MappingV3 - V1) / dY;
+        dU1 = (MappingU3 - U1) / dY;
+      }
+    }
+    XL1 = (X1+32768)>>16;
+    Xlen = ((X2+32768)>>16) - XL1;
+    if (Xlen > 0) {
+      register pl_Float t;
       CL = C1;
-      ZL = Z1;
+      pZL = ZL = Z1;
       UL = U1;
       VL = V1;
-      if (XL1 < cam->ClipLeft) {  
-        UL += dUL*(cam->ClipLeft-XL1);
-        VL += dVL*(cam->ClipLeft-XL1);
-        CL += dCL*(cam->ClipLeft-XL1);
-        ZL += dZL*(cam->ClipLeft-XL1);
-        XL1 = cam->ClipLeft;
-      }
-      XL2 = plMin(cam->ClipRight, XL2);
-      if ((XL2-XL1) > 0) {
-        if (slb) {
-          if (XL1 < *(slb + (Y0<<2))) *(slb + (Y0<<2)) = XL1;
-          if (XL2 > *(slb + (Y0<<2) + 1)) *(slb + (Y0<<2) + 1) = XL2;
-        }
-        XL2 -= XL1;
-        gmem += XL1;
-        XL1 += XL2;
-        iZL = ZL;
-        idZL = dZL * nm;
-        idUL = idVL = 0;
-        iUL = iULnext = ((pl_sInt32Type) (UL/ZL)) << PL_PBITS;
-        iVL = iVLnext = ((pl_sInt32Type) (VL/ZL)) << PL_PBITS;
-        do {
-          register pl_FloatType t;
-          UL += nmdUL;
-          VL += nmdVL;
-          iUL = iULnext;
-          iVL = iVLnext;
-          iZL += idZL;
-          t = 1.0/iZL;
-          iULnext = ((pl_sInt32Type) (UL*t)) << PL_PBITS;
-          iVLnext = ((pl_sInt32Type) (VL*t)) << PL_PBITS;
-          idUL = (iULnext - iUL)>>nmb;
-          idVL = (iVLnext - iVL)>>nmb;
-          n = nm;
-          XL2 -= n;
-          if (XL2 < 0) n += XL2;
-          do {
-            *gmem++ = addtable[CL>>8] +
+      gmem += XL1;
+      zbuf += XL1;
+      XL1 += Xlen-scrwidth;
+      t = 65536.0 / ZL;     
+      iUL = iULnext = ((pl_sInt32) (UL*t));
+      iVL = iVLnext = ((pl_sInt32) (VL*t));
+      do {
+        UL += dUL;
+        VL += dVL;
+        iUL = iULnext;
+        iVL = iVLnext;
+        pZL += pdZL;
+        t = 65536.0/pZL;
+        iULnext = ((pl_sInt32) (UL*t));
+        iVLnext = ((pl_sInt32) (VL*t));
+        idUL = (iULnext - iUL)>>nmb;
+        idVL = (iVLnext - iVL)>>nmb;
+        n = nm;
+        Xlen -= n;  
+        if (Xlen < 0) n += Xlen;
+        if (zb) do {
+            if (*zbuf < ZL) {
+              *zbuf = ZL;
+              *gmem = remap[addtable[CL>>8] +
                       texture[((iUL>>16)&MappingU_AND) +
-                              ((iVL>>twidth16minus)&twidthand)];
+                              ((iVL>>vshift)&MappingV_AND)]];
+            }
+            zbuf++;
+            gmem++;
+            ZL += dZL;
             CL += dCL;
             iUL += idUL;
             iVL += idVL;
           } while (--n);
-        } while (XL2 > 0);
-        gmem -= XL1;
-      }
+        else do {
+            *gmem++ = remap[addtable[CL>>8] +
+                      texture[((iUL>>16)&MappingU_AND) +
+                              ((iVL>>vshift)&MappingV_AND)]];
+            CL += dCL;
+            iUL += idUL;
+            iVL += idVL;
+          } while (--n);
+      } while (Xlen > 0);
+      gmem -= XL1;
+      zbuf -= XL1;
+    } else {
+      zbuf += scrwidth;
+      gmem += scrwidth;
     }
-    gmem += cam->ScreenWidth;
     Z1 += dZ1;
     U1 += dU1;
     V1 += dV1;
     X1 += dX1;
     X2 += dX2;
     C1 += dC1;
-  } while (++Y0 < Y2);
+  }
 }

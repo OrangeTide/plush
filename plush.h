@@ -1,572 +1,684 @@
 /******************************************************************************
-**                          Plush Version 1.0                                **
-**         A portable high performance realtime 3D rendering library         **
-**                                                                           **
-**              All code copyright (c) 1996-1997, Justin Frankel             **
-**               See the included Legal.doc for licensing terms              **
-**                                                                           **
-**                     Visit the Official Plush Page:                        **
-**                  http://nullsoft.home.ml.org/plush.html                   **
-**                                                                           **
-**                  Send comments, improvements, etc to:                     **
-**                          j.frankel@m.cc.utah.edu                          **
-**                                                                           **
+  plush.h
+  PLUSH 3D VERSION 1.1 MAIN HEADER
+  Copyright (c) 1996-1997 Justin Frankel
+  Do not distribute seperately from the rest of the package.
+  For more information on Plush and the latest updates, please visit
+    http://nullsoft.home.ml.org/plush/
 ******************************************************************************/
 
-/****
-***** Configuration
-****/
+#ifndef _PLUSH_H_
+#define _PLUSH_H_
 
-/* Type to use for general floating point operations: float or double */
-#define PL_FloatType double
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
-/* 16 bit integer */
-#define PL_Int16Type short int
+#include "pl_conf.h"
+#include "pl_defs.h"
+#include "pl_types.h"
 
-/* 32 bit integer */
-#define PL_Int32Type long int
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/* Type to use for zbuffer: must be floating point */
-#define PL_ZBufferType float
+extern char plVersionString[];      /* Version string */
+extern char plCopyrightString[];    /* Copyright string */
 
-/* MUST be 32 bit IEEE float */
-#define PL_IEEEFloat32Type float
-
-/* Maximum number of children that an object can have */
-#define PL_MAX_CHILDREN (16)
-
-/****
-***** DEFINES
-****/
-
-#define plMin(x,y) (( ( x ) > ( y ) ? ( y ) : ( x )))
-#define plMax(x,y) (( ( x ) < ( y ) ? ( y ) : ( x )))
-#define PL_PI 3.14159265359
-
-#define PL_SHADE_NONE (0x0)
-#define PL_SHADE_FLAT (0x01)
-#define PL_SHADE_GOURAUD (0x02)
-
-#define PL_FILL_SOLID (0x0)
-#define PL_FILL_TEXTURE (0x1)
-#define PL_FILL_ENVIRONMENT (0x2)
-#define PL_FILL_TRANSPARENT (0x4)
-
-#define PL_LIGHT_NONE (0x0)
-#define PL_LIGHT_VECTOR (0x1)
-#define PL_LIGHT_POINT (0x2)
-
-/****
-***** TYPES
-****/
-
-typedef PL_ZBufferType pl_ZBufferType;
-typedef PL_FloatType pl_FloatType;
-typedef PL_IEEEFloat32Type pl_IEEEFloat32Type;
-typedef signed PL_Int32Type pl_sInt32Type;
-typedef unsigned PL_Int32Type pl_uInt32Type;
-typedef signed PL_Int16Type pl_sInt16Type;
-typedef unsigned PL_Int16Type pl_uInt16Type;
-
-typedef struct _pl_TextureType {
-  unsigned char *Data;         /* Texture data */
-  unsigned char *PaletteData;  /* Palette data */
-  unsigned char Height;        /* Log2 of width */
-  unsigned char Width;         /* Log2 of height */
-  unsigned char NumColors;     /* Number of colors used in texture */
-} pl_TextureType;
-
-typedef struct _pl_MaterialType {
-  unsigned char NumGradients;  /* Desired number of gradients */
-  unsigned char Priority;      /* Priority: 0 is highest, 255 lowest */
-  unsigned char AmbientLight;  /* Ambient light value */
-  pl_sInt16Type Red, Green, Blue; /* Diffuse RGB */
-  pl_sInt16Type RedSpec, GreenSpec, BlueSpec; /* "Specular" RGB */
-  pl_sInt16Type Shininess;     /* Shininess of material. 1 is dullest */
-  pl_FloatType  EnvScaling;    /* Environment map scaling */
-  unsigned char ShadeType;     /* Shade type: PL_SHADE_* */
-  unsigned char Transparent;   /* Transparency index */
-  unsigned char PerspectiveCorrect; /* Correct textures every n pixels */
-  pl_TextureType *Texture;     /* Texture map */
-  pl_TextureType *Environment; /* Env map */
-  unsigned char _AddTable[256];
-  unsigned char _st, _ft, _tsfact;
-  unsigned char _ColorsUsed, _ColorBase;
-} pl_MaterialType;
-
-typedef struct _pl_VertexType {
-  pl_FloatType x, y, z;        /* Vertex */
-  pl_FloatType nx, ny, nz;     /* Vertex normal */
-  pl_FloatType xformedx, xformedy, xformedz; /* Transformed vertex */
-  pl_FloatType Shade;          /* Vertex intensity (for Gouraud shading) */
-  pl_FloatType sLighting;      /* Static lighting. Should usually be 0.0 */
-  pl_sInt32Type scrx, scry;     /* Screen coordinates of vertex (16.16) */
-  pl_sInt32Type eMappingU, eMappingV; /* Environment map coordinates (16.16)*/
-} pl_VertexType;
-
-typedef struct _pl_FaceType {
-  pl_FloatType nx, ny, nz;     /* Normal */
-  pl_VertexType *Vertices[3];  /* Vertices of triangle */
-  pl_MaterialType *Material;   /* Material of triangle */
-  pl_sInt32Type MappingU[3], MappingV[3]; /* 16.16 Mapping coordinates */ 
-  pl_FloatType Shade;          /* Face intensity (for flat shading) */
-  pl_FloatType sLighting;      /* Static lighting. Should usually be 0.0 */
-} pl_FaceType;
-
-typedef struct _pl_ObjectType {
-  pl_uInt32Type NumVertices;
-  pl_uInt32Type NumFaces;
-  pl_VertexType *Vertices;
-  pl_FaceType *Faces;
-  struct _pl_ObjectType *Children[PL_MAX_CHILDREN];
-  unsigned char BackfaceCull;         /* Are backfacing polys drawn? */
-  unsigned char BackfaceIllumination; /* Illuminated by lights behind them? */ 
-  pl_FloatType Xp, Yp, Zp, Xa, Ya, Za;
-} pl_ObjectType;
-
-typedef struct _pl_SplineType {
-  pl_FloatType *keys;              /* Key data, in chunks of numElem */
-  pl_uInt32Type numElem;           
-  pl_FloatType cont, bias, tens;   
-  pl_FloatType t1,t2,t3,t4,u1,u2,u3,u4,v1,v2,v3; /* Internal */
-} pl_SplineType;
-
-typedef struct _pl_LightType {
-  unsigned char Type;              /* PL_LIGHT_* */
-  pl_FloatType Xp, Yp, Zp;         /* Position (PL_LIGHT_POINT),
-                                      Unit vector (PL_LIGHT_VECTOR) */
-  pl_FloatType Intensity;          /* 0.0 is off, 1.0 is full */
-} pl_LightType;
-
-typedef struct _pl_CameraType {
-  pl_FloatType Fov;                /* FOV in degrees */
-  pl_FloatType AspectRatio;        /* Aspect ratio */
-  signed char Sort;                /* Sort polygons, -1 ftb, 1 btf, 0 no */
-  unsigned char GouraudEnabled;    /* Gouraud shading enabled? */
-  unsigned char EnvEnabled;        /* Environment mapping enabled? */
-  pl_FloatType ClipFront, ClipBack; /* Depth clipping in camera space */
-  pl_sInt32Type ClipTop, ClipLeft;  /* Clipping in screen space */
-  pl_sInt32Type ClipBottom, ClipRight; 
-  pl_sInt32Type ScreenWidth, ScreenHeight; /* Screen dimensions */
-  pl_sInt32Type CenterX, CenterY;   /* Center of screen */
-  pl_FloatType Xp, Yp, Zp;         /* Camera position */
-  pl_FloatType Xa, Ya, Za;         /* Camera angle */
-  unsigned char *frameBuffer;      /* Framebuffer */
-  pl_ZBufferType *zBuffer;         /* Z Buffer (NULL if none) */
-  pl_uInt16Type *_ScanLineBuffer;  /* Dirty scanlining buffer */
-} pl_CameraType;
-
-/****
-***** VARIABLES
-****/
-
-extern char plVersionString[];                    /* Version string */
-extern char plCopyrightString[];                  /* Copyright string */
-
-/****
-***** FUNCTIONS
-****/
-
-/**
-*** material.c: material color ramp and table generation
-**/
+/******************************************************************************
+** Material Functions (mat.c)
+******************************************************************************/
 
 /*
-** plInitializeMaterial() initializes the material "m", and if "g" is nonzero,
-**   sets the appropriate palette entries in "pal". 
-** Notes: Use plPM*() instead of this function, for most apps 
+  plMatCreate() creates a material.
+  Parameters:
+    none
+  Returns:
+    a pointer to the material on success, 0 on failure 
 */
-void plInitializeMaterial(unsigned char *pal, pl_MaterialType *m, char g);
-
-/** 
-*** pm.c: palette managing
-**/
+pl_Mat *plMatCreate();
 
 /*
-** plPMBegin() initializes the palette manager, to use "palette" from 
-**   "begin" to "end".
+  plMatDelete() deletes a material that was created with plMatCreate().
+  Parameters:
+    m: a pointer to the material to be deleted
+  Returns:
+    nothing
 */
-void plPMBegin(unsigned char *palette, unsigned char begin, unsigned char end);
+void plMatDelete(pl_Mat *m);
 
 /*
-** plPMAddMaterial() adds "m" to the list of materials.
+  plMatInit() initializes a material that was created with plMatCreate().
+  Parameters:
+    m: a pointer to the material to be intialized
+  Returns:
+    nothing
+  Notes: 
+    you *must* do this before calling plMatMapToPal() or plMatMakeOptPal().
 */
-void plPMAddMaterial(pl_MaterialType *m);
+void plMatInit(pl_Mat *m);
 
 /*
-** plPMEnd() finishes the palette management process, and actually creates 
-**   the palette.
+  plMatMapToPal() maps a material that was created with plMatCreate() and 
+    initialized with plMatInit() to a palette.
+  Parameters:
+    pal: a 768 byte array of unsigned chars, each 3 being a rgb triplet
+         (0-255, *not* the cheesy vga 0-63)
+    pstart: starting offset to use colors of, usually 0
+    pend: ending offset to use colors of, usually 255
+  Returns:
+    nothing
+  Notes:
+    Mapping a material with > 2000 colors can take up to a second or two. 
+      Be careful, and go easy on plMat.NumGradients ;)
 */
-void plPMEnd();
-
-/** 
-*** objutil.c: object utility functions
-**/
+void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_uChar pstart, pl_uChar pend);
 
 /*
-** plScaleObect() scales "o" (and all subobjects) by "s" and returns a 
-**   pointer to "o".
-**   Note: This is a slow routine, so don't use it every frame. ;)
+  plMatMakeOptPal() makes an optimal palette from materials created with 
+    plMatCreate() and initialized with plMatInit().
+  Paramters:
+    p: palette to create
+    pstart: first color entry to use
+    pend: last color entry to use
+    materials: a null terminated array of materials to generate the palette from
+  Returns:
+    nothing
+  Notes: yowza, when the total number of requested colors is much greater than
+         the number of output colors, this can take *FOREVER*. I mean, 30+ 
+         minutes on my P133. I am working on a faster system, but for now, 
+         either use this, or read in a palette from disk and use 
+         plMatMapToPal(). (The palette from some nudie pics works quite 
+         well, actually).
 */
-pl_ObjectType *plScaleObject(pl_ObjectType *o, pl_FloatType s);
+void plMatMakeOptPal(pl_uChar *p, pl_uChar pstart, 
+                     pl_uChar pend, pl_Mat **materials);
 
-/*
-** plStretchObject() stretches "o" (and all subobjects) by "x","y","z". 
-**   It recalculates the normals of "o" if "rcn" is nonzero. 
-**   Returns a pointer to "o". 
-**   Note: This is a slow routine, so don't use it every frame. ;)
-*/
-pl_ObjectType *plStretchObject(pl_ObjectType *o, pl_FloatType x,
-                               pl_FloatType y, pl_FloatType z, char rcn);
 
-/*
-** plTranslateObject() translates "o" (and all subobjects) by "x","y","z", 
-**   and returns "o".
-**   Note: this is for pre-translations only. For realtime translations,
-**         just use o->Xp, etc.
-*/
-pl_ObjectType *plTranslateObject(pl_ObjectType *o, pl_FloatType x,
-                                 pl_FloatType y, pl_FloatType z);
 
-/*
-** plFlipObjectNormals() flips all vertex and face normals of "o" and all
-**   subobjects of "o". 
-*/
-
-pl_ObjectType *plFlipObjectNormals(pl_ObjectType *o);
-
-/*
-** plFreeObject() frees "o" and all subobjects of "o".
-*/
-void plFreeObject(pl_ObjectType *o);
+/******************************************************************************
+** Object Functions (obj.c)
+******************************************************************************/
 
 /* 
-** plAllocObject() allocates an object with "np" vertices, "nf" faces,
-**   and returns a pointer to it. 
+  plObjCreate() allocates an object
+  Paramters:
+    np: Number of vertices in object
+    nf: Number of faces in object
+  Returns:
+    a pointer to the object on success, 0 on failure
 */
-pl_ObjectType *plAllocObject(pl_uInt32Type np, pl_uInt32Type nf);
+pl_Obj *plObjCreate(pl_uInt32 np, pl_uInt32 nf);
+
+/*
+  plObjDelete() frees an object and all of it's subobjects
+    that was allocated with plObjCreate();
+  Paramters:
+    o: object to delete
+  Returns: 
+    nothing
+*/
+void plObjDelete(pl_Obj *o);
 
 /* 
-** plCloneObject() creates an exact but independent duplicate of "o" and all of
-** "o"'s subobjects, and returns a pointer to it.
+  plObjClone() creates an exact but independent duplicate of an object and
+    all of it's subobjects
+  Paramters:
+    o: the object to clone
+  Returns:
+    a pointer to the new object on success, 0 on failure
 */
-pl_ObjectType *plCloneObject(pl_ObjectType *o);
+pl_Obj *plObjClone(pl_Obj *o);
 
 /*
-** plScaleObjectTexture() scales the texture coordinates of "o" 
-**   (and all subobjects) by "u","v" and returns a pointer to "o".
+  plObjScale() scales an object, and all of it's subobjects.
+  Paramters:
+    o: a pointer to the object to scale
+    s: the scaling factor
+  Returns:
+    a pointer to o.
+  Notes: This scales it slowly, by going through each vertex and scaling it's 
+    position. Avoid doing this in realtime.
 */
-pl_ObjectType *plScaleObjectTexture(pl_ObjectType *o, pl_FloatType u,
-                                    pl_FloatType v);
+pl_Obj *plObjScale(pl_Obj *o, pl_Float s);
 
 /*
-** plSetObjectMaterial() sets the material of all faces in "o" to be "m",
-**   and all subobjects if "th" is nonzero.
+  plObjStretch() stretches an object, and all of it's subobjects
+  Parameters:
+    o: a pointer to the object to stretch
+    x,y,z: the x y and z stretch factors
+  Returns:
+    a pointer to o. 
+  Notes: same as plObjScale(). Note that the normals are preserved.
 */
-void plSetObjectMaterial(pl_ObjectType *o, pl_MaterialType *m, char th);
-
-/**
-*** plush.c: more misc stuff!
-**/
-
-/*
-** plNewLight() creates a new light and returns a pointer to it.
-*/
-pl_LightType *plNewLight();
+pl_Obj *plObjStretch(pl_Obj *o, pl_Float x, pl_Float y, pl_Float z);
 
 /*
-** plSetLight() sets up a light allocated with plNewLight(), and returns
-**   a pointer to "light".
-**   note: mode should be one of PL_LIGHT_*
+   plObjTranslate() translates an object
+   Parameters:
+     o: a pointer to the object to translate
+     x,y,z: translation in object space 
+   Returns:
+     a pointer to o
+   Notes: same has plObjScale().
 */
-pl_LightType *plSetLight(pl_LightType *light, unsigned char mode,
-                         pl_FloatType x, pl_FloatType y, 
-                         pl_FloatType z, pl_FloatType intensity);
+pl_Obj *plObjTranslate(pl_Obj *o, pl_Float x, pl_Float y, pl_Float z);
 
 /*
-** plFreeLight() frees "l".
+  plObjFlipNormals() flips all vertex and face normals of and object
+    and allo of it's subobjects.
+  Parameters:
+    o: a pointer to the object to flip normals of
+  Returns:
+    a pointer to o
+  Notes: 
+    Not especially fast. 
+    A call to plObjFlipNormals() or plObjCalcNormals() will restore the normals
 */
-void plFreeLight(pl_LightType *l);
+pl_Obj *plObjFlipNormals(pl_Obj *o);
 
 /*
-** plPutFace() puts "face" to the screen using the appropriate rasterizer.
-**   Note: really should not be used by itself, but only by the library.
+  plObjSetMat() sets the material of all faces in an object.
+  Paramters:
+    o: the object to set the material of
+    m: the material to set it to
+    th: "transcend hierarchy". If set, it will set the 
+        material of all subobjects too.
+  Returns:
+    nothing
 */
-void plPutFace(pl_CameraType *cam, pl_FaceType *face);
+void plObjSetMat(pl_Obj *o, pl_Mat *m, pl_Bool th);
 
 /*
-** plFreeTexture() frees all memory associated with "t"
+   plObjCalcNormals() calculates all face and vertex normals for an object
+     and all subobjects.
+   Paramters:
+     obj: the object
+   Returns: 
+     nothing
 */
-void plFreeTexture(pl_TextureType *t);
+void plObjCalcNormals(pl_Obj *obj);
+
+/******************************************************************************
+** Frustum Clipping Functions (clip.c)
+******************************************************************************/
+
+/*
+  plClipSetFrustum() sets up the clipping frustum.
+  Parameters:
+    cam: a camera allocated with plCamCreate().
+  Returns:
+    nothing
+  Notes:
+    Sets up the internal structures. 
+    DO NOT CALL THIS ROUTINE FROM WITHIN A plRender*() block.
+*/
+void plClipSetFrustum(pl_Cam *cam);
+
+/*
+  plClipRenderFace() renders a face and clips it to the frustum initialized
+    with plClipSetFrustum().
+  Parameters:
+    face: the face to render
+  Returns:
+    nothing
+  Notes: this is used internally by plRender*(), so be careful. Kinda slow too.
+*/
+void plClipRenderFace(pl_Face *face);
+
+/******************************************************************************
+** Light Handling Routines (light.c)
+******************************************************************************/
+
+/*
+  plLightCreate() creates a new light
+  Parameters:
+    none
+  Returns:
+    a pointer to the light
+*/
+pl_Light *plLightCreate();
+
+/*
+  plLightSet() sets up a light allocated with plLightCreate()
+  Parameters:
+    light: the light to set up
+    mode: the mode of the light (PL_LIGHT_*)
+    x,y,z: either the position of the light (PL_LIGHT_POINT*) or the angle
+           in degrees of the light (PL_LIGHT_VECTOR)
+    intensity: the intensity of the light (0.0-1.0)
+    halfDist: the distance at which PL_LIGHT_POINT_DISTANCE is 1/2 intensity
+  Returns: 
+    a pointer to light.
+*/
+pl_Light *plLightSet(pl_Light *light, pl_uChar mode, pl_Float x, pl_Float y, 
+                     pl_Float z, pl_Float intensity, pl_Float halfDist);
+
+/*
+  plLightDelete() frees a light allocated with plLightCreate().
+  Paramters:
+    l: light to delete
+  Returns:
+    nothing
+*/
+void plLightDelete(pl_Light *l);
+
+/* PUT ME SOMEWHERE */
+/*
+** plTexDelete() frees all memory associated with "t"
+*/
+void plTexDelete(pl_Texture *t);
+
+
+/******************************************************************************
+** Camera Handling Routines (cam.c)
+******************************************************************************/
 
 /* 
-** plNewCamera() allocates a new camera and returns a pointer to it.
-**  Parameters:
-**   sw: screen width
-**   sh: screen height
-**   ar: aspect ratio (usually 1.0)
-**   fov: field of view (usually 45-120)
-**   ds: use dirty scanlining? (See plWriteBuffer())
-**   fb: pointer to framebuffer
-**   zb: pointer to Z buffer (or NULL)
-**     note: if NULL, c->Sort is set, otherwise c->Sort is 0.
+  plCamCreate() allocates a new camera
+  Parameters:
+    sw: screen width
+    sh: screen height
+    ar: aspect ratio (usually 1.0)
+    fov: field of view (usually 45-120)
+    fb: pointer to framebuffer
+    zb: pointer to Z buffer (or NULL)
+  Returns:
+    a pointer to the newly allocated camera
 */
-pl_CameraType *plNewCamera(pl_sInt32Type sw, pl_sInt32Type sh, 
-                           pl_FloatType ar, pl_FloatType fov,
-                           unsigned char ds, unsigned char *fb,
-                           pl_ZBufferType *zb);
+pl_Cam *plCamCreate(pl_uInt sw, pl_uInt sh, pl_Float ar, pl_Float fov,
+                    pl_uChar *fb, pl_ZBuffer *zb);
 
 /*
-** plSetCameraTarget() sets the target of "c" to "x","y","z".
+  plCamSetTarget() sets the target of a camera allocated with plCamCreate().
+  Parameters:
+    c: the camera to set the target of
+    x,y,z: the worldspace coordinate of the target
+  Returns: 
+    nothing
+  Notes:
+    Sets the pitch and pan of the camera. Does not touch the roll.
 */
-void plSetCameraTarget(pl_CameraType *c, pl_FloatType x, pl_FloatType y,
-                       pl_FloatType z);
+void plCamSetTarget(pl_Cam *c, pl_Float x, pl_Float y, pl_Float z);
 
 /*
-** plFreeCamera() frees all memory associated with "c", excluding framebuffers
-**   and Z buffers
+   plCamDelete() frees all memory associated with a camera excluding 
+     framebuffers and Z buffers
+   Paramters:
+     c: camera to free
+   Returns: 
+     nothing
 */
-void plFreeCamera(pl_CameraType *c);
+void plCamDelete(pl_Cam *c);
 
-/**
-*** dscan.c: dirty scanlining
-**/
+/******************************************************************************
+** Easy Rendering Interface (render.c)
+******************************************************************************/
+
+/*
+ plRenderBegin() begins the rendering process.
+   Parameters: 
+     Camera: camera to use for rendering
+   Returns: 
+     nothing
+   Notes: 
+     Only one rendering process can occur at a time. 
+     Uses plClip*(), so don't use them within or around a plRender() block.
+*/
+void plRenderBegin(pl_Cam *Camera);
+
+/*
+   plRenderLight() adds a light to the scene. 
+   Parameters:
+     light: light to add to scene
+   Returns:
+     nothing
+   Notes: Any objects rendered before will be unaffected by this.
+*/
+void plRenderLight(pl_Light *light);
 
 /* 
-** plInitScanLineBuffers() initializes the dirty-scanlining buffers for 
-**   "Camera". 
+   plRenderObj() adds an object and all of it's subobjects to the scene.
+   Parameters:
+     obj: object to render
+   Returns:
+     nothing
+   Notes: if Camera->Sort is zero, objects are rendered in the order that 
+     they are added to the scene.
 */
-void plInitScanLineBuffers(pl_CameraType *Camera);
-
-/*
-** plFreeScanLineBuffers() frees the dirty-scanlining buffers for "Camera".
-*/
-void plFreeScanLineBuffers(pl_CameraType *Camera);
-
-/*
-** plWriteBuffer() writes the framebuffer of "Camera" out using dirty-scanling,
-**   calling "moveout" and "movein". Not enough space for how this works here,
-**   so look at some example source, or don't worry about it. ;)
-*/
-void plWriteBuffer(pl_CameraType *Camera,
-                 void (*moveout)(pl_CameraType *,pl_uInt32Type,pl_uInt32Type),
-                 void (*movein)(pl_CameraType *,pl_uInt32Type,pl_uInt32Type));
-
-/**
-*** render.c: the render manager!
-**/
-
-/*
-** plRenderBegin() begins the rendering process, using "Camera".
-**   Only one rendering process can occur at a time. 
-*/
-void plRenderBegin(pl_CameraType *Camera);
-
-/*
-** plRenderLight() adds "light" to the scene. Any objects rendered before
-**   will be unaffected by this.
-*/
-void plRenderLight(pl_LightType *light);
+void plRenderObj(pl_Obj *obj);
 
 /* 
-** plRenderObject() adds "obj" and all subobjects to the scene.
-*/
-void plRenderObject(pl_ObjectType *obj);
-
-/* 
-** plRenderEnd() actually does the rendering.
+   plRenderEnd() actually does the rendering, and closes the rendering process
+   Paramters: 
+     none
+   Returns: 
+     nothing
 */
 void plRenderEnd();
 
-/**
-*** make.c: primitves!
-**/
+/******************************************************************************
+** Object Primitives Code (make.c)
+******************************************************************************/
 
 /* 
-** plMakePlane() makes a plane of "w" by "d", perpendicular to the y axis,
-**   facing upward, centered at (0,0,0) and divides it into "res"x"res" pieces, 
-**   and returns a pointer to the object. Each face is of material "m".
+  plMakePlane() makes a plane centered at the origin facing up the y axis.
+  Parameters:
+    w: width of the plane (along the x axis)
+    d: depth of the plane (along the z axis)
+    res: resolution of plane, i.e. subdivisions
+    m: material to use
+  Returns:
+    pointer to object created.
 */
-pl_ObjectType *plMakePlane(pl_FloatType w, pl_FloatType d, pl_uInt16Type res,
-                           pl_MaterialType *m);
+pl_Obj *plMakePlane(pl_Float w, pl_Float d, pl_uInt res, pl_Mat *m);
 
 /*
-** plMakeBox() makes a box of "w"x"d"x"h", centered at (0,0,0), and returns
-**   a pointer to the object. Each face is of material "m".
+  plMakeBox() makes a box centered at the origin
+  Parameters:
+    w: width of the box (x axis)
+    d: depth of the box (z axis)
+    h: height of the box (y axis)
+  Returns:
+    pointer to object created.
 */
-pl_ObjectType *plMakeBox(pl_FloatType w, pl_FloatType d, pl_FloatType h,
-                         pl_MaterialType *m);
+pl_Obj *plMakeBox(pl_Float w, pl_Float d, pl_Float h, pl_Mat *m);
 
 /* 
-** plMakeCone() makes a cone of radius "r" and height "h", centered at the 
-**   origin, with "div" sides. The bottom is capped if "cap" is nonzero.
-**   Each face is of material "m".
+  plMakeCone() makes a cone centered at the origin
+  Parameters:
+    r: radius of the cone (x-z axis)
+    h: height of the cone (y axis)
+    div: division of cone (>=3)
+    cap: close the big end?
+    m: material to use
+  Returns:
+    pointer to object created.
 */
-pl_ObjectType *plMakeCone(pl_FloatType r, pl_FloatType h, unsigned char div, 
-                          char cap, pl_MaterialType *m);
+pl_Obj *plMakeCone(pl_Float r, pl_Float h, pl_uInt div, pl_Bool cap, pl_Mat *m);
 
 /*
-** plMakeCylinder() makes a cylinder of radius "r" and height "h", centered at
-**   the origin, with "div" sides. It caps the ends if "captop" and "capbottom"
-**   are nonzero. Each face is of material "m".
+  plMakeCylinder() makes a cylinder centered at the origin
+  Parameters:
+    r: radius of the cylinder (x-z axis)
+    h: height of the cylinder (y axis)
+    divr: division of of cylinder (around the circle) (>=3)
+    captop: close the top
+    capbottom: close the bottom
+    m: material to use
+  Returns:
+    pointer to object created.
 */
-pl_ObjectType *plMakeCylinder(pl_FloatType r, pl_FloatType h,
-                              unsigned char divr, char captop, char capbottom,
-                              pl_MaterialType *m);
+pl_Obj *plMakeCylinder(pl_Float r, pl_Float h, pl_uInt divr, pl_Bool captop, 
+                       pl_Bool capbottom, pl_Mat *m);
 
 /*
-** plMakeSphere() makes a sphere radius "r" centered at the origin.
-**   It is divided up by "divr" and "divh" by radius and height respectively.
-**   Each face is of material "m".
+  plMakeSphere() makes a sphere centered at the origin.
+  Parameters:
+    r: radius of the sphere
+    divr: division of the sphere (around the y axis) (>=3)
+    divh: division of the sphere (around the x,z axis) (>=3)
+    m: material to use
+  Returns:
+    pointer to object created.
 */
-pl_ObjectType *plMakeSphere(pl_FloatType r, unsigned char divr, 
-                            unsigned char divh, pl_MaterialType *m);
+pl_Obj *plMakeSphere(pl_Float r, pl_uInt divr, pl_uInt divh, pl_Mat *m);
 
 /*
-** plMakeTorus() makes a torus with inner radius "r1" outer radius "r2" 
-**   centered at the origin. It is divided into "divrot" tubes, each divided
-**   "divrad" times around. (Or something like that ;)
-**   Each face is of material "m".
+  plMakeTorus() makes a torus centered at the origin
+  Parameters:
+    r1: inner radius of the torus
+    r2: outer radius of the torus
+    divrot: division of the torus (around the y axis) (>=3)
+    divrad: division of the radius of the torus (x>=3)
+    m: material to use
+  Returns:
+    pointer to object created.
 */
-pl_ObjectType *plMakeTorus(pl_FloatType r1, pl_FloatType r2,
-                           unsigned char divrot, unsigned char divrad, 
-                           pl_MaterialType *m);
+pl_Obj *plMakeTorus(pl_Float r1, pl_Float r2, pl_uInt divrot, 
+                    pl_uInt divrad, pl_Mat *m);
 
-/**
-*** 3ds.c: the Autodesk .3DS reader
-**/
+/******************************************************************************
+** File Readers (read_*.c)
+******************************************************************************/
 
 /* 
-** plReadObject3DS() reads a 3DS object hierarchy from "fn" and returns a 
-**   pointer to the object. Each face is of material "m".
+  plRead3DSObj() reads a 3DS object
+  Parameters:
+    fn: filename of object to read
+    m: material to assign it
+  Returns:
+    pointer to object
+  Notes:
+    This reader organizes multiple objects like so:
+      1) the first object is returned
+      2) the second object is the first's first child
+      3) the third object is the second's first child
+      4) etc
 */
-pl_ObjectType *plReadObject3DS(char *fn, pl_MaterialType *m);
-
-/**
-*** cob.c: the ASCII .COB reader
-**/
+pl_Obj *plRead3DSObj(char *fn, pl_Mat *m);
 
 /*
-** plReadObjectCOB() reads a ascii .COB object from "fn" and returns a pointer 
-**   to it. Each face is of material "mat".
+  plReadCOBObj() reads an ascii .COB object
+  Parameters:
+    fn: filename of object to read
+    mat: material to assign it
+  Returns:
+    pointer to object
+  Notes:
+    This is Caligari's ASCII object format.
+    This reader doesn't handle multiple objects. It just reads the first one.
+    Polygons with lots of sides are not always tesselated correctly. Just
+      use the "Tesselate" button from within truespace to improve the results.
 */
-pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat);
-
-/**
-*** jaw.c: the .JAW object reader
-**/
+pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat);
 
 /*
-** plReadObjectJAW() reads a .JAW object from "fn" and returns a pointer to it.
-**   Each face is of material "m".
+  plReadJAWObj() reads a .JAW object.
+  Parameters:
+    fn: filename of object to read
+    m: material to assign it
+  Returns:
+    pointer to object
+  Notes:
+    For information on the .JAW format, please see the jaw3D homepage,
+      http://www.tc.umn.edu/nlhome/g346/kari0022/jaw3d/
 */
-pl_ObjectType *plReadObjectJAW(char *fn, pl_MaterialType *m);
-
-/**
-*** pcx.c: the PCX texture reader.
-**/
+pl_Obj *plReadJAWObj(char *fn, pl_Mat *m);
 
 /*
-** plReadTexturePCX() reads a 8bpp PCX file with power-of-two dimensions
-**   from  "fn" and returns a pointer to it. 
+  plReadPCXTex() reads a 8bpp PCX texture
+  Parameters:
+    fn: filename of texture to read
+    rescale: will rescale image if not whole log2 dimensions (USE THIS)
+    optimize: will optimize colors (USE THIS TOO)
+  Returns:
+    pointer to texture
+  Notes: 
+    The PCX must be a 8bpp zSoft version 5 PCX. The texture's palette will 
+      be optimized, and the texture might be scaled up so that it's dimensions
+      will be a nice power of two.
 */
-pl_TextureType *plReadTexturePCX(char *fn);
+pl_Texture *plReadPCXTex(char *fn, pl_Bool rescale, pl_Bool optimize);
 
-/** 
-*** math.c: math code
-**/
+/******************************************************************************
+** Math Code (math.c)
+******************************************************************************/
 
 /*
-** plMatrixRotate() generates a rotation matrix around the axis specified
-**   by "m" by "Deg" degrees into "matrix". 
-**   m: 1=X, 2=Y, 3=Z.
+  plMatrixRotate() generates a rotation matrix
+  Parameters:
+    matrix: an array of 16 pl_Floats that is a 4x4 matrix
+    m: the axis to rotate around, 1=X, 2=Y, 3=Z.
+    Deg: the angle in degrees to rotate
+  Returns: 
+    nothing
 */
-void plMatrixRotate(pl_FloatType *matrix, unsigned char m, pl_FloatType Deg);
+void plMatrixRotate(pl_Float matrix[], pl_uChar m, pl_Float Deg);
 
 /*
-** plMatrixTranslate() generates a translation matrix into "m"
+  plMatrixTranslate() generates a translation matrix
+  Parameters:
+    m: the matrix (see plMatrixRotate for more info)
+  Returns:
+    nothing
 */
-void plMatrixTranslate(pl_FloatType *m, pl_FloatType x, pl_FloatType y,
-                       pl_FloatType z);
+void plMatrixTranslate(pl_Float m[], pl_Float x, pl_Float y, pl_Float z);
 
 /* 
-** plMatrixMultiply() multiplies "dest" by "src" and stores the result in "dest"
+  plMatrixMultiply() multiplies two matrices
+  Parameters:
+    dest: destination matrix will be multipled by src
+    src: source matrix
+  Returns:
+    nothing
+  Notes: 
+    this is the same as dest = dest*src (since the order *does* matter);
 */
-void plMatrixMultiply(pl_FloatType *dest, pl_FloatType *src);
+void plMatrixMultiply(pl_Float *dest, pl_Float src[]);
 
 /*
-** plMatrixApply() applies "m" to "x","y","z" and stores the result in
-**   "outx", etc.
+   plMatrixApply() applies a matrix.
+  Parameters:
+    m: matrix to apply
+    x,y,z: input coordinate
+    outx,outy,outz: pointers to output coords.
+  Returns:
+    nothing
+  Notes: 
+    applies the matrix to the 3d point to produce the transformed 3d point
 */
-void plMatrixApply(pl_FloatType *m, pl_FloatType x, pl_FloatType y, 
-                   pl_FloatType z, pl_FloatType *outx, 
-                   pl_FloatType *outy, pl_FloatType *outz);
+void plMatrixApply(pl_Float *m, pl_Float x, pl_Float y, pl_Float z, 
+                   pl_Float *outx, pl_Float *outy, pl_Float *outz);
 
 /*
-** plCalcNormals() calculates all face and vertex normals for "obj" (and all
-**   subobjects)
+  plNormalizeVector() makes a vector a unit vector
+  Parameters:
+    x,y,z: pointers to the vector
+  Returns:
+    nothing
 */
-void plCalcNormals(pl_ObjectType *obj);
+void plNormalizeVector(pl_Float *x, pl_Float *y, pl_Float *z);
 
 /*
-** plNormalizeVector() makes the vector (x,y,z) a unit vector
+  plDotProduct() returns the dot product of two vectors
+  Parameters:
+    x1,y1,z1: the first vector
+    x2,y2,z2: the second vector
+  Returns:
+    the dot product of the two vectors
 */
-void plNormalizeVector(pl_FloatType *x, pl_FloatType *y, pl_FloatType *z);
+pl_Float plDotProduct(pl_Float x1, pl_Float y1, pl_Float z1,
+                      pl_Float x2, pl_Float y2, pl_Float z2);
+
+/******************************************************************************
+** Spline Interpolation (spline.c)
+******************************************************************************/
 
 /*
-** plDotProduct() returns the dot product of (x1,y1,z1) and (x2,y2,z2)
+  plSplineInit() initializes a spline
+  Parameters:
+    s: the spline
+  Returns:
+    nothing
+  Notes:
+    Intializes the spline. Do this once, or when you change any of the settings
 */
-pl_FloatType plDotProduct(pl_FloatType x1, pl_FloatType y1, pl_FloatType z1,
-                          pl_FloatType x2, pl_FloatType y2, pl_FloatType z2);
-
-/**
-*** spline.c: spline interpolation functions!
-**/
+void plSplineInit(pl_Spline *s);
 
 /*
-** plSplineInit() initializes "s".
+  plSplineGetPoint() gets a point on the spline
+  Parameters:
+    s: spline
+    frame: time into spline. 0.0 is start, 1.0 is second key point, etc.
+    out: a pointer to an array of s->keyWidth floats that will be filled in.
+  Returns:
+    nothing
 */
-void plSplineInit(pl_SplineType *s);
+void plSplineGetPoint(pl_Spline *s, pl_Float frame, pl_Float *out);
+
+/******************************************************************************
+** 8xX  Bitmapped Text
+******************************************************************************/
+/*
+  plTextSetFont() sets the font to be used by the plText*() functions.
+    Parameters:
+      font: a pointer to a 8xX bitmapped font
+      height: the height of the font (X)
+    Returns: 
+      nothing
+*/
+
+void plTextSetFont(pl_uChar *font, pl_uChar height);
 
 /*
-** plSplineGetPoint() gets the point from the spline "s" at time "frame",
-**   into "out". (Look at some example source for how to use this)
+  plTextPutChar() puts a character to a camera
+  Parameters:
+    cam: The camera. If the camera has a zBuffer, it will be used.
+    x: the x screen position of the left of the text
+    y: the y screen position of the top of the text
+    z: the depth of the text (used when cam->zBuffer is set)
+    color: the color to make the text
+    c: the character to put. Special characters such as '\n' aren't handled.
+  Returns:
+    nothing
 */
-void plSplineGetPoint(pl_SplineType *s, pl_FloatType frame, pl_FloatType *out);
 
-/**
-*** ?f_*.c: rasterizers! 
-*** zf_*.c: zbuffering
-*** pf_*.c: non-zbuffering
-**/
+void plTextPutChar(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
+                   pl_uChar color, pl_uChar c);
 
 /*
-** non-ZBuffering fillers
+  plTextPutString() puts an array of characters to a camera
+  Parameters:
+    cam: The camera. If the camera has a zBuffer, it will be used.
+    x: the x screen position of the left of the text
+    y: the y screen position of the top of the text
+    z: the depth of the text (used when cam->zBuffer is set)
+    color: the color to make the text
+    string: 
+      the characters to put. '\n' and '\t' are handled as one would expect
+  Returns:
+    nothing
 */
-void plPF_SolidF(pl_CameraType *, pl_FaceType *);
-void plPF_SolidG(pl_CameraType *, pl_FaceType *);
-void plPF_TexF(pl_CameraType *, pl_FaceType *);
-void plPF_TexG(pl_CameraType *, pl_FaceType *);
-void plPF_EnvF(pl_CameraType *, pl_FaceType *);
-void plPF_EnvG(pl_CameraType *, pl_FaceType *);
-void plPF_TexEnv(pl_CameraType *, pl_FaceType *);
-void plPF_PTexF(pl_CameraType *, pl_FaceType *);
-void plPF_PTexG(pl_CameraType *, pl_FaceType *);
-void plPF_TransF(pl_CameraType *, pl_FaceType *);
-void plPF_TransG(pl_CameraType *, pl_FaceType *);
-/*
-** ZBuffering fillers
-*/ 
-void plPF_SolidFZB(pl_CameraType *, pl_FaceType *);
-void plPF_SolidGZB(pl_CameraType *, pl_FaceType *);
-void plPF_TexFZB(pl_CameraType *, pl_FaceType *);
-void plPF_TexGZB(pl_CameraType *, pl_FaceType *);
-void plPF_EnvFZB(pl_CameraType *, pl_FaceType *);
-void plPF_EnvGZB(pl_CameraType *, pl_FaceType *);
-void plPF_TexEnvZB(pl_CameraType *, pl_FaceType *);
-void plPF_PTexFZB(pl_CameraType *, pl_FaceType *);
-void plPF_PTexGZB(pl_CameraType *, pl_FaceType *);
-void plPF_TransFZB(pl_CameraType *, pl_FaceType *);
-void plPF_TransGZB(pl_CameraType *, pl_FaceType *);
+void plTextPutStr(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
+                  pl_uChar color, pl_sChar *string);
 
-/* END */
+/*
+  plTextPrintf() is printf() for graphics
+  Parameters:
+    cam: The camera. If the camera has a zBuffer, it will be used.
+    x: the x screen position of the left of the text
+    y: the y screen position of the top of the text
+    z: the depth of the text (used when cam->zBuffer is set)
+    color: the color to make the text
+    format: 
+      the characters to put, with printf() formatting codes.
+      '\n' and '\t' are handled as one would expect
+    ...: any additional parameters specified by format
+  Returns:
+    nothing
+*/
+void plTextPrintf(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
+                  pl_uChar color, pl_sChar *format, ...);
+
+/******************************************************************************
+** Built-in Rasterizers
+******************************************************************************/
+
+void plPF_SolidF(pl_Cam *, pl_Face *);
+void plPF_SolidG(pl_Cam *, pl_Face *);
+void plPF_TexF(pl_Cam *, pl_Face *);
+void plPF_TexG(pl_Cam *, pl_Face *);
+void plPF_TexEnv(pl_Cam *, pl_Face *);
+void plPF_PTexF(pl_Cam *, pl_Face *);
+void plPF_PTexG(pl_Cam *, pl_Face *);
+void plPF_TransF(pl_Cam *, pl_Face *);
+void plPF_TransG(pl_Cam *, pl_Face *);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* !_PLUSH_H_ */

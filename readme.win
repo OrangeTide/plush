@@ -1,0 +1,115 @@
+Plush 3D v1.1.0
+Win32/Visual C++ 4.0 Version
+
+0. CONTENTS
+  0.   CONTENTS
+  I.   LICENSE
+  II.  FEATURES
+  III. FILES IN THIS ARCHIVE
+  IV.  INSTALLATION
+  V.   NOTES
+  VI.  LIBRARY INFORMATION
+  VII. DOCUMENTATION/MORE INFORMATION
+  IIX. CONTACTING NULLSOFT
+
+I. LICENSE
+
+This is Visual C++ 4.0 Win32 library of Plush 3D 1.1.0, a realtime portable 
+3D rendering library.  Plush is a shareware library, meaning that the 
+following conditions apply:
+  1) If you are making non-commercial software (i.e. freeware), you may use 
+     Plush free of charge, so long as proper credit is given to Nullsoft. 
+     Proper credit would be a credit in the credits screen, or if there is no
+     credits screen, in a "Readme" file. You must also notify Nullsoft 
+     (or Justin Frankel) of your product. You may do so by emailing 
+     justin@nullsoft.ml.org. 
+  2) If you are making commercial software, you must purchase a license for 
+     each unique product you publish. The current pricing (as of April 5th, 
+     1997) is $99/product. You must also give credit to Nullsoft (see #1).
+     Email justin@nullsoft.ml.org for information on licensing.
+  3) If you are a shareware author (i.e. you're writing a game that you plan
+     to sell, yet do not have capital), you may contact Justin Frankel to 
+     discuss a special licensing agreement, where you can wait to pay the
+     licensing fee until you've sold 10 copies of your program (the exact 
+     number can be negotiated).
+  4) Finally, one can purchase the complete source code and right to use Plush
+     in as many products as desired. This license is non-transferable. The 
+     current price for this license is $499. This also entitles the holder to
+     an upgrade to the next major release of Plush (i.e. 1.2). This license 
+     doesn't require proper credit to be given in a "credits" screen.
+     
+II. FEATURES
+  Some notable features of Plush 1.1.0 are:
+    Totally portable ANSI C source, tested on:
+      DOS32: Watcom C 10.5, DJGPP v2 (gcc 2.7.2.1)
+      Win32: Visual C++ 4.0
+      Unix variants: Linux, Solaris, SunOS, HP/UX, AIX 
+                     (gcc, and native CC where available)
+      MacOS: Codewarrior 9, 10
+    Rasterization: 
+      8bpp only
+      Z-buffer or painters algorithm
+      Solid, Environment, Textured, Perspective Textured, EnvTexture, 
+        Translucent fills
+      None, Flat, Gouraud, Distance lightshading
+    Unlimited number of cameras
+      Pitch, Pan, and Roll control
+      Target tracking  
+    Unlimited number of point and directional lights, each with own intensity
+      Point lights with distance falloff
+    Hierarchical Objects
+      .3DS Mesh Reader
+      .COB Mesh Reader
+      .JAW Mesh Reader
+    Textures
+      PCX texture reader with palette optimization and auto-rescaling
+      Perspective Correct modes have piecewise linear approximation every
+        n pixels.
+    Spline interpolation with tension, continuity, and bias control
+    Easy to use, cross-platform API
+    Architecture that makes it simple to add new rasterizers
+
+III. FILES IN THIS ARCHIVE
+    Name                    Description
+    ----                    -----------
+    plush.lib               The Win32 Visual C++ 4.0 library
+    plush.h                 The main Plush header, mostly function prototypes
+    pl_conf.h               Configuration header, simple types
+    pl_defs.h               Definition header, constants
+    pl_types.h              Types header, complex structure definitions
+    README.win              This file
+
+IV. INSTALLATION
+  Copy plush.lib to C:\MSDEVSTD\LIB
+  Copy pl*.h to C:\MSDEVSTD\INCLUDE 
+
+V. NOTES
+  Sorry, I only have MSVC++ Standard, so this has no optimizations turned on,
+and is slow. If you want a fast Win32 version, either buy a source license, or
+let me use a machine w/ VC++ PRO.
+
+VI. LIBRARY INFORMATION
+  The Win32 Visual C++ 4.0 library is 113074 bytes long, and was compiled 
+using Visual C++ 4.0 Standard. No optimizations were enabled (because there
+are none)
+
+VII. DOCUMENTATION/MORE INFORMATION
+  At the time of this release, API documentation is minimal. I am currently 
+working on elaborate HTML docs, which are about 10% done. They can be viewed
+at http://nullsoft.home.ml.org/plush/pl_api.html. There is also a decent amount
+of documentation in plush.h and pl_*.h. Check back to 
+http://nullsoft.home.ml.org/plush/ periodically to see if new documentation has
+been released.
+  Also, as you might have noticed, no examples have been included with this 
+release. Please see http://nullsoft.home.ml.org/plush/ for examples.
+
+IIX. CONTACTING NULLSOFT
+  (These are for Plush, other products might have different addresses)
+  Email: justin@nullsoft.ml.org
+  Web: http://nullsoft.home.ml.org
+  Mail:
+    Justin Frankel
+    60 Palisades Dr. N.
+    Sedona, AZ 86336
+
+<EOF>

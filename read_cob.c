@@ -1,29 +1,23 @@
 /******************************************************************************
-**                         Plush Version 1.0                                 **
-**                                                                           **
-**                      ASCII .COB Object Reader                             **
-**                                                                           **
-**             All code copyright (c) 1996-1997, Justin Frankel              **
+Plush Version 1.1
+read_cob.c
+ASCII COB Object Reader
+All code copyright (c) 1996-1997, Justin Frankel
 ******************************************************************************/
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <malloc.h>
 
 #include "plush.h"
 
 #define PL_COB_MAX_LINELENGTH 1024
 
-pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat) {
+pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
   FILE *fp = fopen(fn,"rt");
   long int p1,m1,p2,m2,p3,m3;
   char temp_string[PL_COB_MAX_LINELENGTH];
   float TransMatrix[4][4];
-  pl_ObjectType *obj;
-  pl_uInt32Type x,i2;
+  pl_Obj *obj;
+  pl_uInt32 x,i2;
   long int numVertices, numMappingVertices, numFaces, i;
-  pl_sInt32Type *MappingVertices = 0;
+  pl_sInt32 *MappingVertices = 0;
   if (!fp) return 0;
 
   fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
@@ -77,19 +71,19 @@ pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat) {
     numFaces += i-3;
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
   }
-  obj = plAllocObject(numVertices,numFaces);
+  obj = plObjCreate(numVertices,numFaces);
   if (!obj) { fclose(fp); return 0; }
   rewind(fp);
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
   } while (!feof(fp) && strncmp("World Vertices",temp_string,12));
-  if (feof(fp)) { plFreeObject(obj); fclose(fp); return 0; }
+  if (feof(fp)) { plObjDelete(obj); fclose(fp); return 0; }
   for (x = 0; x < numVertices; x ++) {
     float xp, yp, zp;
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
     if (feof(fp) ||
         sscanf(temp_string,"%f %f %f", &xp, &yp, &zp) != 3) {
-      plFreeObject(obj); fclose(fp); return 0;
+      plObjDelete(obj); fclose(fp); return 0;
     }
     obj->Vertices[x].x = (TransMatrix[0][0]*xp+TransMatrix[0][1]*yp+
                           TransMatrix[0][2]*zp+TransMatrix[0][3]);
@@ -103,17 +97,17 @@ pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat) {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
   } while (!feof(fp) && strncmp("Texture Vertices",temp_string,16));
   if (!feof(fp)) {
-    MappingVertices = (pl_sInt32Type *) 
-      malloc(sizeof(pl_sInt32Type) * numMappingVertices * 2);
+    MappingVertices = (pl_sInt32 *) 
+      malloc(sizeof(pl_sInt32) * numMappingVertices * 2);
     if (MappingVertices) {
       for (x = 0; x < numMappingVertices; x ++) {
         float p1, p2;
         fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
         if (feof(fp) || sscanf(temp_string,"%f %f", &p1, &p2) != 2) {
-          free(MappingVertices); plFreeObject(obj); fclose(fp); return 0;
+          free(MappingVertices); plObjDelete(obj); fclose(fp); return 0;
         }
-        MappingVertices[x*2] = (pl_sInt32Type) (p1*65536.0);
-        MappingVertices[x*2+1] = (pl_sInt32Type) (p2*65536.0);
+        MappingVertices[x*2] = (pl_sInt32) (p1*65536.0);
+        MappingVertices[x*2+1] = (pl_sInt32) (p2*65536.0);
       }
     }
   } 
@@ -122,7 +116,8 @@ pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat) {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
   } while (!feof(fp) && strncmp("Faces",temp_string,5));
   if (feof(fp)) { 
-    free(MappingVertices); plFreeObject(obj); fclose(fp); return 0; 
+    if (MappingVertices) free(MappingVertices); 
+    plObjDelete(obj); fclose(fp); return 0; 
   }
   for (x = 0; x < numFaces; x ++) {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
@@ -131,7 +126,8 @@ pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat) {
     if (i == 3) {
       if (feof(fp) || sscanf(temp_string,"<%ld,%ld> <%ld,%ld> <%ld,%ld>",
                              &p3,&m3,&p2,&m2,&p1,&m1) != 6) {
-        free(MappingVertices); plFreeObject(obj); fclose(fp); return 0; 
+        if (MappingVertices) free(MappingVertices); 
+        plObjDelete(obj); fclose(fp); return 0; 
       }
       obj->Faces[x].Vertices[0] = obj->Vertices + p1; 
       obj->Faces[x].Vertices[1] = obj->Vertices + p2; 
@@ -148,7 +144,8 @@ pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat) {
     } else {
       long int p[16],m[16];
       if (feof(fp)) {
-        free(MappingVertices); plFreeObject(obj); fclose(fp); return 0; 
+        if (MappingVertices) free(MappingVertices); 
+        plObjDelete(obj); fclose(fp); return 0; 
       }
       sscanf(temp_string,
          "<%ld,%ld> <%ld,%ld> <%ld,%ld> <%ld,%ld> "
@@ -178,8 +175,8 @@ pl_ObjectType *plReadObjectCOB(char *fn, pl_MaterialType *mat) {
     }
   }
   obj->BackfaceCull = 1;
-  free(MappingVertices);
-  plCalcNormals(obj);
+  if (MappingVertices) free(MappingVertices);
+  plObjCalcNormals(obj);
   fclose(fp);
   return obj;
 }
