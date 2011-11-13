@@ -1,0 +1,11 @@
+These are some simple examples for Plush 1.1. They will compile in linux 
+(with svgalib) using makefile.lin, Or DOS/djgpp using makefile.dj, and, if 
+you're really daring, using Watcom (I have not provided a watcom makefile).
+
+These are the first 4 (of lots) of examples for Plush.
+
+Enjoy, and send all comments and suggestions, as well as new examples to:
+
+Justin Frankel
+justin@nullsoft.ml.org
+

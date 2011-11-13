@@ -1,0 +1,25 @@
+/*
+** Flurry: a Plush demo program.
+** Copyright (c) 1997, Justin Frankel
+** For use with djgpp v2.x and Allegro
+** For more information on Plush, see http://nullsoft.home.ml.org/plush/
+*/
+
+Okay, here's a better demo app that uses allegro.
+
+I am beginning to find that the way I am using allegro to blit to screen
+is a touch slow. So if you want it to be faster, write your own VGA
+or VESA code. 
+
+To prove my point, there is flurry2.c which doesn't use allegro, but instead
+uses some quick and dirty code to write directly to screen using mode13... 
+It's a little bit faster. Also, the executable is *definately* a little bit 
+smaller.
+
+I'm not dissing Allegro. In fact, Allegro is really damn cool, but I also want
+to show that Plush is really independent of any graphics library. Anyways,
+one more thing:
+
+It can be debated whether chaos is good, but chaos is undeniably cool.
+
+-Justin

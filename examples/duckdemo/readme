@@ -1,0 +1,15 @@
+/*
+** DUCKDEMO: a Plush demo program.
+** Copyright (c) 1997, Justin Frankel
+** For use with djgpp v2.x and Allegro
+** For more information on Plush, see http://nullsoft.home.ml.org/plush/
+*/
+
+Okay, here's a little demo app that uses allegro.
+
+I must say that it is a touch slow in that I am using allegro to 
+blit to screen, it is faster if you do it yourself.
+
+Just a nice duck floating around...
+
+-Justin
