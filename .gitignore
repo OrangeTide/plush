@@ -1,0 +1,12 @@
+*~
+*.o
+*.a
+*.swp*
+
+# autotools
+Makefile.in
+aclocal.m4
+configure
+depcomp
+install-sh
+missing
