@@ -34,13 +34,13 @@ void main(int argc, char **argv) {
     exit(1);
   }
      // First child is an eye, child of child is eye
-  plSetObjectMaterial(Object->Children[0],&Material2,0); 
+  plSetObjectMaterial(Object->Children[0],&Material2,0);
   plSetObjectMaterial(Object->Children[0]->Children[0],&Material2,0);
      // Child of eye is other eye, make it child of duck
   Object->Children[1] = Object->Children[0]->Children[0];
   Object->Children[0]->Children[0] = 0;
 
-  plScaleObject(Object,0.1); // Scale object down... 
+  plScaleObject(Object,0.1); // Scale object down...
 
   Object->BackfaceCull = 0;    // We want to be able to see through the duck
   Object->BackfaceIllumination = 1;
@@ -51,14 +51,14 @@ void main(int argc, char **argv) {
   allegro_init();
   if (argc > 1) sscanf(argv[1],"%dx%d",&vWidth,&vHeight);
   if (set_gfx_mode(GFX_AUTODETECT,vWidth,vHeight,0,0)) {
-    allegro_exit(); 
+    allegro_exit();
     printf("Mode not supported\n");
     exit(1);
   }
   DIB = create_bitmap(vWidth,vHeight);
-  if ((argc > 1 && !stricmp(argv[1],"-nozb")) || 
+  if ((argc > 1 && !stricmp(argv[1],"-nozb")) ||
       (argc > 2 && !stricmp(argv[2],"-nozb"))) zbuffer = 0;
-  else 
+  else
     zbuffer = (pl_ZBufferType *) malloc(sizeof(pl_ZBufferType)*vWidth*vHeight);
 
   Camera = plNewCamera(vWidth,vHeight, // Create camera

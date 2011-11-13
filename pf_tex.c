@@ -31,7 +31,7 @@ void plPF_TexEnv(pl_Cam *cam, pl_Face *TriFace) {
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
 
   pl_sInt32 U1, V1, U2, V2, dU1=0, dU2=0, dV1=0, dV2=0, dUL=0, dVL=0, UL, VL;
-  pl_sInt32 eU1, eV1, eU2, eV2, edU1=0, edU2=0, edV1=0, 
+  pl_sInt32 eU1, eV1, eU2, eV2, edU1=0, edU2=0, edV1=0,
             edV2=0, edUL=0, edVL=0, eUL, eVL;
   pl_sInt32 X1, X2, dX1=0, dX2=0, XL1, XL2;
   pl_Float Z1, ZL, dZ1=0, dZ2=0, dZL=0, Z2;
@@ -116,7 +116,7 @@ void plPF_TexEnv(pl_Cam *cam, pl_Face *TriFace) {
       eV1 = eMappingV2;
       stat = 1|8;
     }
-  } 
+  }
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
@@ -128,7 +128,7 @@ void plPF_TexEnv(pl_Cam *cam, pl_Face *TriFace) {
     edUL = ((edU1-edU2)*dY)/XL1;
     edVL = ((edV1-edV2)*dY)/XL1;
     dZL = ((dZ1-dZ2)*dY)/XL1;
-  } else {  
+  } else {
     XL1 = ((X2-X1+(1<<19))>>20);
     if (XL1) {
       edUL = (eU2-eU1)/XL1;
@@ -259,7 +259,7 @@ void plPF_TexF(pl_Cam *cam, pl_Face *TriFace) {
   vshift = 16 - Texture->Width;
   MappingV_AND = ((1<<Texture->Height)-1)<<Texture->Width;
   MappingU_AND = (1<<Texture->Width)-1;
- 
+
   if (TriFace->Material->Environment) {
     PUTFACE_SORT_ENV();
   } else {
@@ -308,7 +308,7 @@ void plPF_TexF(pl_Cam *cam, pl_Face *TriFace) {
       V1 = MappingV2;
       stat = 1|8;
     }
-  } 
+  }
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
@@ -318,7 +318,7 @@ void plPF_TexF(pl_Cam *cam, pl_Face *TriFace) {
     dUL = ((dU1-dU2)*dY)/XL1;
     dVL = ((dV1-dV2)*dY)/XL1;
     dZL = ((dZ1-dZ2)*dY)/XL1;
-  } else {  
+  } else {
     XL1 = ((X2-X1+(1<<19))>>20);
     if (XL1) {
       dUL = (U2-U1)/XL1;
@@ -382,12 +382,12 @@ void plPF_TexF(pl_Cam *cam, pl_Face *TriFace) {
         } while (--XL2);
       gmem -= XL1;
       zbuf -= XL1;
-    } 
+    }
     zbuf += cam->ScreenWidth;
     gmem += cam->ScreenWidth;
     X1 += dX1;
-    X2 += dX2;    
-    U1 += dU1; 
+    X2 += dX2;
+    U1 += dU1;
     V1 += dV1;
     Z1 += dZ1;
     Y0++;
@@ -481,7 +481,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
       V1 = MappingV2;
       stat = 1|8;
     }
-  } 
+  }
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
@@ -492,7 +492,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
     dVL = ((dV1-dV2)*dY)/XL1;
     if (zb) dZL = ((dZ1-dZ2)*dY)/XL1;
     dCL = ((dC1-dC2)*dY)/XL1;
-  } else { 
+  } else {
     XL1 = ((X2-X1+(1<<19))>>20);
     if (XL1) {
       dUL = (U2-U1)/XL1;
@@ -561,7 +561,7 @@ void plPF_TexG(pl_Cam *cam, pl_Face *TriFace) {
           if (CL < 0) av=addtable[0];
           else if (CL > (255<<8)) av=addtable[255];
           else av=addtable[CL>>8];
-          *gmem++ = remap[av + 
+          *gmem++ = remap[av +
                           texture[((UL>>16)&MappingU_AND) +
                                   ((VL>>vshift)&MappingV_AND)]];
           CL += dCL;

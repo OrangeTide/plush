@@ -5,17 +5,17 @@ Jaw3D Object Reader
 Copyright (c) 1996-2000, Justin Frankel
 *******************************************************************************
  Notes on .JAW files:
-   This is a file format created by Jawed Karim for Jaw3D 
+   This is a file format created by Jawed Karim for Jaw3D
      (http://jaw3d.home.ml.org).
           -- updated 11/6/00 - www.jawed.com
    It is very simple, and lets one easily create ones own models using only
    a text editor. The format is pretty simple:
      The first line must be "Light: (x,y,z)" where x,y, and z are the x y and
         z components of the lightsource vector (I think ;)
-     A series of lines, numbered 0 to n, in the format of 
-        "i: x y z", where i is the vertex number (which should be listed in 
+     A series of lines, numbered 0 to n, in the format of
+        "i: x y z", where i is the vertex number (which should be listed in
         order, and x y and z are the coordinates of that vertex.
-     A series of lines, having the format "tri a, b, c" where a b and c are 
+     A series of lines, having the format "tri a, b, c" where a b and c are
         the vertices that the face uses. It is unclear at this time which
         way the vertices are listed (ccw or cw), so just make em consistent
         and you can always use plFlipObjectNormals() on the loaded object.
@@ -37,7 +37,7 @@ pl_Obj *plReadJAWObj(char *filename, pl_Mat *m) {
     if (strstr(line, ":") != NULL) total_points++;
 
   rewind(jawfile); fgets(line, 256, jawfile);
-  while (fgets(line, 256, jawfile) != NULL) 
+  while (fgets(line, 256, jawfile) != NULL)
     if (strstr(line, "tri") != NULL) total_polys++;
 
   rewind(jawfile); fgets(line, 256, jawfile);
@@ -66,4 +66,4 @@ pl_Obj *plReadJAWObj(char *filename, pl_Mat *m) {
   fclose(jawfile);
   plObjCalcNormals(obj);
   return obj;
-}	
+}

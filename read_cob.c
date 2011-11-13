@@ -97,7 +97,7 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
   } while (!feof(fp) && memcmp("Texture Vertices",temp_string,16));
   if (!feof(fp)) {
-    MappingVertices = (pl_sInt32 *) 
+    MappingVertices = (pl_sInt32 *)
       malloc(sizeof(pl_sInt32) * numMappingVertices * 2);
     if (MappingVertices) {
       for (x = 0; x < numMappingVertices; x ++) {
@@ -110,14 +110,14 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
         MappingVertices[x*2+1] = (pl_sInt32) (p2*65536.0);
       }
     }
-  } 
+  }
   rewind(fp);
   do {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
   } while (!feof(fp) && memcmp("Faces",temp_string,5));
-  if (feof(fp)) { 
-    if (MappingVertices) free(MappingVertices); 
-    plObjDelete(obj); fclose(fp); return 0; 
+  if (feof(fp)) {
+    if (MappingVertices) free(MappingVertices);
+    plObjDelete(obj); fclose(fp); return 0;
   }
   for (x = 0; x < numFaces; x ++) {
     fgets(temp_string,PL_COB_MAX_LINELENGTH,fp);
@@ -126,12 +126,12 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
     if (i == 3) {
       if (feof(fp) || sscanf(temp_string,"<%ld,%ld> <%ld,%ld> <%ld,%ld>",
                              &p3,&m3,&p2,&m2,&p1,&m1) != 6) {
-        if (MappingVertices) free(MappingVertices); 
-        plObjDelete(obj); fclose(fp); return 0; 
+        if (MappingVertices) free(MappingVertices);
+        plObjDelete(obj); fclose(fp); return 0;
       }
-      obj->Faces[x].Vertices[0] = obj->Vertices + p1; 
-      obj->Faces[x].Vertices[1] = obj->Vertices + p2; 
-      obj->Faces[x].Vertices[2] = obj->Vertices + p3; 
+      obj->Faces[x].Vertices[0] = obj->Vertices + p1;
+      obj->Faces[x].Vertices[1] = obj->Vertices + p2;
+      obj->Faces[x].Vertices[2] = obj->Vertices + p3;
       if (MappingVertices) {
         obj->Faces[x].MappingU[0] = MappingVertices[m1*2];
         obj->Faces[x].MappingV[0] = MappingVertices[m1*2+1];
@@ -144,8 +144,8 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
     } else {
       long int p[16],m[16];
       if (feof(fp)) {
-        if (MappingVertices) free(MappingVertices); 
-        plObjDelete(obj); fclose(fp); return 0; 
+        if (MappingVertices) free(MappingVertices);
+        plObjDelete(obj); fclose(fp); return 0;
       }
       sscanf(temp_string,
          "<%ld,%ld> <%ld,%ld> <%ld,%ld> <%ld,%ld> "
@@ -157,9 +157,9 @@ pl_Obj *plReadCOBObj(char *fn, pl_Mat *mat) {
           p+8,m+8,p+9,m+9,p+10,m+10,p+11,m+11,
           p+12,m+12,p+13,m+13,p+14,m+14,p+15,m+15);
       for (i2 = 1; i2 < (i-1); i2 ++) {
-        obj->Faces[x].Vertices[0] = obj->Vertices + p[0]; 
-        obj->Faces[x].Vertices[1] = obj->Vertices + p[i2+1]; 
-        obj->Faces[x].Vertices[2] = obj->Vertices + p[i2]; 
+        obj->Faces[x].Vertices[0] = obj->Vertices + p[0];
+        obj->Faces[x].Vertices[1] = obj->Vertices + p[i2+1];
+        obj->Faces[x].Vertices[2] = obj->Vertices + p[i2];
         if (MappingVertices) {
           obj->Faces[x].MappingU[0] = MappingVertices[m[0]*2];
           obj->Faces[x].MappingV[0] = MappingVertices[m[0]*2+1];

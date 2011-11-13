@@ -19,11 +19,11 @@ void plSplineGetPoint(pl_Spline *s, pl_Float frame, pl_Float *out) {
   b = (1-s->tens)*(1-s->cont)*(1-s->bias);
   c = (1-s->tens)*(1-s->cont)*(1+s->bias);
   d = (1-s->tens)*(1+s->cont)*(1-s->bias);
-  v1 = t1 = -a / 2.0; u1 = a; 
-  u2 = (-6-2*a+2*b+c)/2.0; v2 = (a-b)/2.0; t2 = (4+a-b-c) / 2.0; 
-  t3 = (-4+b+c-d) / 2.0; 
-  u3 = (6-2*b-c+d)/2.0; 
-  v3 = b/2.0; 
+  v1 = t1 = -a / 2.0; u1 = a;
+  u2 = (-6-2*a+2*b+c)/2.0; v2 = (a-b)/2.0; t2 = (4+a-b-c) / 2.0;
+  t3 = (-4+b+c-d) / 2.0;
+  u3 = (6-2*b-c+d)/2.0;
+  v3 = b/2.0;
   t4 = d/2.0; u4 = -t4;
 
   i0 = (pl_uInt) frame;

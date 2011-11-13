@@ -26,7 +26,7 @@ pl_Light *plLightSet(pl_Light *light, pl_uChar mode, pl_Float x, pl_Float y,
     case PL_LIGHT_POINT_DISTANCE:
     case PL_LIGHT_POINT:
       light->Xp = x;
-      light->Yp = y; 
+      light->Yp = y;
       light->Zp = z;
     break;
   }

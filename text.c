@@ -47,7 +47,7 @@ void plTextPutChar(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
       a = 128;
       while (a) {
         if (xx >= cam->ClipRight) break;
-        if (xx++ >= cam->ClipLeft) 
+        if (xx++ >= cam->ClipLeft)
           if (ch & a)
             if (zz > *zbuffer) {
               *zbuffer = zz;
@@ -73,7 +73,7 @@ void plTextPutChar(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
       }
       if (a) break;
     } while (--len);
-  }  
+  }
 }
 
 void plTextPutStr(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,

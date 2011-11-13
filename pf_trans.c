@@ -22,7 +22,7 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
 
   PUTFACE_SORT();
-  
+
   if (bc < 0) bc=0;
   if (bc > (pl_sInt32) TriFace->Material->_tsfact-1) bc=TriFace->Material->_tsfact-1;
   remap+=bc;
@@ -57,14 +57,14 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
       Z1 = TriFace->Scrz[i1];
       stat= 1|8;
     }
-  } 
+  }
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
   if (zb) {
     XL1 = (((dX1-dX2)*dY+(1<<19))>>20);
     if (XL1) dZL = ((dZ1-dZ2)*dY)/XL1;
-    else { 
+    else {
       XL1 = ((X2-X1+(1<<19))>>20);
       if (XL1) dZL = (Z2-Z1)/XL1;
     }
@@ -97,7 +97,7 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
     XL2 = (X2+(1<<19))>>20;
     ZL = Z1;
     if ((XL2-XL1) > 0) {
-      XL2 -= XL1; 
+      XL2 -= XL1;
       zbuf += XL1;
       gmem += XL1;
       XL1 += XL2;
@@ -106,7 +106,7 @@ void plPF_TransF(pl_Cam *cam, pl_Face *TriFace) {
             *zbuf = ZL;
             *gmem = remap[lookuptable[*gmem]];
           }
-          gmem++; 
+          gmem++;
           zbuf++;
           ZL += dZL;
         } while (--XL2);
@@ -178,7 +178,7 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
       C1 = (pl_sInt32) (TriFace->Shades[i1]*nc);
       stat = 1|8;
     }
-  } 
+  }
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
@@ -223,7 +223,7 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
     XL2 = (X2+(1<<19))>>20;
     ZL = Z1;
     if ((XL2-XL1) > 0) {
-      XL2 -= XL1; 
+      XL2 -= XL1;
       zbuf += XL1;
       gmem += XL1;
       XL1 += XL2;
@@ -236,7 +236,7 @@ void plPF_TransG(pl_Cam *cam, pl_Face *TriFace) {
             *zbuf = ZL;
             *gmem = remap[av + lookuptable[*gmem]];
           }
-          gmem++; 
+          gmem++;
           CL += dCL;
           zbuf++;
           ZL += dZL;

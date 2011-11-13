@@ -22,25 +22,25 @@ static void _cdsSetPalette(unsigned char *);
 void cdsRender(HWND hWnd, void (*df)(unsigned char *)) {
   if (Active) {
     df(image.lpvData);
-    InvalidateRect(hWnd, NULL, FALSE); 
+    InvalidateRect(hWnd, NULL, FALSE);
   }
 }
 
 BOOL cdsPaint(HWND hwnd) {
-  RECT lrc; 
+  RECT lrc;
   HDC lhdc;
   PAINTSTRUCT lps;
   if (Active) {
     lhdc = BeginPaint(hwnd,&lps);
     SelectPalette(lhdc, hpalApp, FALSE);
-    RealizePalette(lhdc); 
+    RealizePalette(lhdc);
 	GetClientRect(hwnd, &lrc);
-    BitBlt(lhdc, 0, 0, lrc.right-lrc.left, 
+    BitBlt(lhdc, 0, 0, lrc.right-lrc.left,
 		   lrc.bottom-lrc.top,
            hdcImage, 0, 0, SRCCOPY);
     EndPaint(hwnd,&lps);
     return TRUE;
-  } 
+  }
   else return FALSE;
 }
 
@@ -49,7 +49,7 @@ void cdsDeInit() {
   if (!Active) return;
   Active = 0;
   if (hpalApp) DeleteObject(hpalApp);
-  if (hdcImage) { 
+  if (hdcImage) {
     hbm = (HBITMAP) SelectObject(hdcImage, gbmOldMonoBitmap);
     DeleteObject(hbm);
     DeleteDC(hdcImage);
@@ -85,12 +85,12 @@ static void _cdsInit(int w, int h, unsigned char *pal) {
   hbm = CreateDIBSection(hdcImage, (BITMAPINFO *)&image.bi,
         DIB_RGB_COLORS, &image.lpvData, NULL, 0);
   gbmOldMonoBitmap = (HBITMAP)SelectObject(hdcImage, hbm);
-} 
+}
 
 static void _cdsSetPalette(unsigned char *pal) {
   int Counter;
-  LOGPALETTE *LogicalPalette = (LOGPALETTE *) 
-	  malloc(sizeof(LOGPALETTE) + 
+  LOGPALETTE *LogicalPalette = (LOGPALETTE *)
+	  malloc(sizeof(LOGPALETTE) +
 			 sizeof(PALETTEENTRY)*256);
   LogicalPalette->palVersion = 0x300;
   LogicalPalette->palNumEntries = 256;

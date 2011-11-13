@@ -106,7 +106,7 @@ static void _pl3DSRGBBReader(FILE *f, pl_uInt32 p) {
 static void _pl3DSASCIIZReader(FILE *f, pl_uInt32 p, char *as) {
   char c;
   if (!as) while ((c = fgetc(f)) != EOF && c != '\0');
-  else { 
+  else {
     while ((c = fgetc(f)) != EOF && c != '\0') *as++ = c;
     *as = 0;
   }
@@ -118,7 +118,7 @@ static void _pl3DSObjBlockReader(FILE *f, pl_uInt32 p) {
 }
 
 static void _pl3DSTriMeshReader(FILE *f, pl_uInt32 p) {
-  pl_uInt32 i; 
+  pl_uInt32 i;
   pl_Face *face;
   obj = plObjCreate(0,0);
   _pl3DSChunkReader(f, p);

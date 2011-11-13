@@ -25,7 +25,7 @@ static _clipInfo m_cl[2];
 
 static double m_clipPlanes[NUM_CLIP_PLANES][4];
 static pl_Cam *m_cam;
-static pl_sInt32 m_cx, m_cy; 
+static pl_sInt32 m_cx, m_cy;
 static double m_fov;
 static double m_adj_asp;
 
@@ -47,7 +47,7 @@ void plClipSetFrustum(pl_Cam *cam) {
   memset(m_clipPlanes,0,sizeof(m_clipPlanes));
 
   /* Back */
-  m_clipPlanes[0][2] = -1.0; 
+  m_clipPlanes[0][2] = -1.0;
   m_clipPlanes[0][3] = -cam->ClipBack;
 
   /* Left */
@@ -55,7 +55,7 @@ void plClipSetFrustum(pl_Cam *cam) {
   if (cam->ClipLeft == cam->CenterX) {
     m_clipPlanes[1][0] = 1.0;
   }
-  else _FindNormal(-100,-100, 
+  else _FindNormal(-100,-100,
                 100, -100,
                 m_fov*-100.0/(cam->ClipLeft-cam->CenterX),
                 m_clipPlanes[1]);
@@ -70,7 +70,7 @@ void plClipSetFrustum(pl_Cam *cam) {
   if (cam->ClipRight == cam->CenterX) {
     m_clipPlanes[2][0] = -1.0;
   }
-  else _FindNormal(100,100, 
+  else _FindNormal(100,100,
                 -100, 100,
                 m_fov*100.0/(cam->ClipRight-cam->CenterX),
                 m_clipPlanes[2]);
@@ -83,7 +83,7 @@ void plClipSetFrustum(pl_Cam *cam) {
   m_clipPlanes[3][3] = 0.00000001;
   if (cam->ClipTop == cam->CenterY) {
     m_clipPlanes[3][1] = -1.0;
-  } else _FindNormal(100, -100, 
+  } else _FindNormal(100, -100,
                 100, 100,
                 m_fov*m_adj_asp*100.0/(cam->CenterY-cam->ClipTop),
                 m_clipPlanes[3]);
@@ -92,12 +92,12 @@ void plClipSetFrustum(pl_Cam *cam) {
     m_clipPlanes[3][1] = -m_clipPlanes[3][1];
     m_clipPlanes[3][2] = -m_clipPlanes[3][2];
   }
- 
+
   /* Bottom */
   m_clipPlanes[4][3] = 0.00000001;
   if (cam->ClipBottom == cam->CenterY) {
     m_clipPlanes[4][1] = 1.0;
-  } else _FindNormal(-100, 100, 
+  } else _FindNormal(-100, 100,
                 -100, -100,
                 m_fov*m_adj_asp*-100.0/(cam->CenterY-cam->ClipBottom),
                 m_clipPlanes[4]);
@@ -153,14 +153,14 @@ void plClipRenderFace(pl_Face *face) {
         newface.Scry[a] = m_cy - ((pl_sInt32)((tmp2*m_adj_asp*(float) (1<<20))));
       }
       newface.Material->_PutFace(m_cam,&newface);
-      plRender_TriStats[3] ++; 
+      plRender_TriStats[3] ++;
     }
-    plRender_TriStats[2] ++; 
+    plRender_TriStats[2] ++;
   }
 }
 
 pl_sInt plClipNeeded(pl_Face *face) {
-  double dr,dl,db,dt; 
+  double dr,dl,db,dt;
   double f;
   dr = (m_cam->ClipRight-m_cam->CenterX);
   dl = (m_cam->ClipLeft-m_cam->CenterX);
@@ -172,7 +172,7 @@ pl_sInt plClipNeeded(pl_Face *face) {
            face->Vertices[1]->xformedz <= m_cam->ClipBack ||
            face->Vertices[2]->xformedz <= m_cam->ClipBack) &&
           (face->Vertices[0]->xformedz >= 0 ||
-           face->Vertices[1]->xformedz >= 0 || 
+           face->Vertices[1]->xformedz >= 0 ||
            face->Vertices[2]->xformedz >= 0) &&
           (face->Vertices[0]->xformedx*m_fov<=dr*face->Vertices[0]->xformedz ||
            face->Vertices[1]->xformedx*m_fov<=dr*face->Vertices[1]->xformedz ||
@@ -235,15 +235,15 @@ static pl_uInt _ClipToPlane(pl_uInt numVerts, double *plane)
       m_cl[1].newVertices[outvert].xformedz = (pl_Float) (m_cl[0].newVertices[invert].xformedz +
            (m_cl[0].newVertices[nextvert].xformedz - m_cl[0].newVertices[invert].xformedz)
              * scale);
-      m_cl[1].Shades[outvert] = m_cl[0].Shades[invert] + 
+      m_cl[1].Shades[outvert] = m_cl[0].Shades[invert] +
                         (m_cl[0].Shades[nextvert] - m_cl[0].Shades[invert]) * scale;
-      m_cl[1].MappingU[outvert] = m_cl[0].MappingU[invert] + 
+      m_cl[1].MappingU[outvert] = m_cl[0].MappingU[invert] +
            (m_cl[0].MappingU[nextvert] - m_cl[0].MappingU[invert]) * scale;
-      m_cl[1].MappingV[outvert] = m_cl[0].MappingV[invert] + 
+      m_cl[1].MappingV[outvert] = m_cl[0].MappingV[invert] +
            (m_cl[0].MappingV[nextvert] - m_cl[0].MappingV[invert]) * scale;
-      m_cl[1].eMappingU[outvert] = m_cl[0].eMappingU[invert] + 
+      m_cl[1].eMappingU[outvert] = m_cl[0].eMappingU[invert] +
            (m_cl[0].eMappingU[nextvert] - m_cl[0].eMappingU[invert]) * scale;
-      m_cl[1].eMappingV[outvert] = m_cl[0].eMappingV[invert] + 
+      m_cl[1].eMappingV[outvert] = m_cl[0].eMappingV[invert] +
            (m_cl[0].eMappingV[nextvert] - m_cl[0].eMappingV[invert]) * scale;
       outvert++;
     }

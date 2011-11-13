@@ -23,12 +23,12 @@ BOOL fAppActive;
 
 BOOL InitInstance(HINSTANCE hInstance, int nCmdShow);
 BOOL InitApplication(HINSTANCE hInstance);
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, 
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 						 WPARAM wParam, LPARAM lParam);
 
-int WINAPI WinMain(HINSTANCE hInstance, 
+int WINAPI WinMain(HINSTANCE hInstance,
 				   HINSTANCE hPrevInst,
-                   LPSTR lpszCmdParam, 
+                   LPSTR lpszCmdParam,
 				   int nCmdShow) {
   MSG msg;
   if (!InitApplication(hInstance)) {
@@ -48,12 +48,12 @@ int WINAPI WinMain(HINSTANCE hInstance,
   }
   return msg.wParam;
 }
-  
-LRESULT CALLBACK WndProc(HWND hWnd, UINT message, 
+
+LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 						 WPARAM wParam, LPARAM lParam) {
   switch (message) {
-    case WM_CREATE: 
-      cdsInit(windowWidth,windowHeight); 
+    case WM_CREATE:
+      cdsInit(windowWidth,windowHeight);
 	  if (cubeInit(windowWidth,windowHeight,70.0)) {
 	    MessageBox(hWnd,"Could not load cube.pcx",
 			       "Could not load cube.pcx",MB_OK);
@@ -71,7 +71,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
     case WM_ACTIVATEAPP:
       fAppActive = (BOOL)wParam;
     break;
-    case WM_ERASEBKGND: 
+    case WM_ERASEBKGND:
     return 0;
     case WM_SIZE:
 	  windowWidth = (LOWORD(lParam)+3)&~3;
@@ -85,7 +85,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
     case WM_COMMAND:
       switch (LOWORD(wParam)) {
 	    case IDR_MAINMENU_FILE_QUIT:
-    		if (MessageBox(hWnd,"Would you like to quit?","Quit?",MB_YESNO) == IDYES) 
+    		if (MessageBox(hWnd,"Would you like to quit?","Quit?",MB_YESNO) == IDYES)
 	          PostMessage(hWnd,WM_DESTROY,0,0);
 	    break;
 	    case IDR_MAINMENU_HELP_ABOUT: {
@@ -94,16 +94,16 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message,
 			          "Uses: \n"
 					  "  %s\n"
 					  "  %s\n", plVersionString, plCopyrightString);
-					 
+
 		  MessageBox(hWnd,str,"About",MB_OK);
-	    
+
         } break;
-      }  
+      }
       break;
-    case WM_DESTROY: 
+    case WM_DESTROY:
 	  cubeDeInit();
-	  cdsDeInit(); 
-	  PostQuitMessage(0); 
+	  cdsDeInit();
+	  PostQuitMessage(0);
 	return 0;
   }
   return (DefWindowProc(hWnd, message, wParam, lParam));

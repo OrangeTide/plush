@@ -9,11 +9,11 @@ Okay, here's a better demo app that uses allegro.
 
 I am beginning to find that the way I am using allegro to blit to screen
 is a touch slow. So if you want it to be faster, write your own VGA
-or VESA code. 
+or VESA code.
 
 To prove my point, there is flurry2.c which doesn't use allegro, but instead
-uses some quick and dirty code to write directly to screen using mode13... 
-It's a little bit faster. Also, the executable is *definately* a little bit 
+uses some quick and dirty code to write directly to screen using mode13...
+It's a little bit faster. Also, the executable is *definately* a little bit
 smaller.
 
 I'm not dissing Allegro. In fact, Allegro is really damn cool, but I also want

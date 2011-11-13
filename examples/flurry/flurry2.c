@@ -21,7 +21,7 @@ void set_mode3();
 #define BOX_DIST 2.75
 #define BOX_ROTFACTOR 2.6
 
-void makeBoxes(pl_ObjectType *obj, pl_FloatType s, 
+void makeBoxes(pl_ObjectType *obj, pl_FloatType s,
                pl_MaterialType *m, int i);       // Makes hierarchy of cubes
 void rotateBoxes(pl_ObjectType *obj, pl_FloatType r); // Rotates hierarchy
 
@@ -125,7 +125,7 @@ void makeBoxes(pl_ObjectType *obj, pl_FloatType s, pl_MaterialType *m, int i) {
   obj->Children[4]->Zp = s*BOX_DIST;
   obj->Children[5] = plMakeBox(s/2,s/2,s/2,m);
   obj->Children[5]->Zp = -s*BOX_DIST;
-  for (x = 0; x < 6; x ++) 
+  for (x = 0; x < 6; x ++)
     makeBoxes(obj->Children[x],s/2,m+1,i-1);
 }
 
@@ -134,7 +134,7 @@ void rotateBoxes(pl_ObjectType *obj, pl_FloatType r) {
   if (!obj) return;
   obj->Ya += r;
   obj->Xa += r;
-  for (i = 0 ; i < 6; i ++) 
+  for (i = 0 ; i < 6; i ++)
     rotateBoxes(obj->Children[i],r*BOX_ROTFACTOR);
   rotateBoxes(obj->Children[5],r*BOX_ROTFACTOR);
 }
@@ -143,7 +143,7 @@ void rotateBoxes(pl_ObjectType *obj, pl_FloatType r) {
 
 void inline wait_vsync() {
   __asm__ __volatile__ ("movw $0x3DA, %%dx
-    0: inb %%dx, %%al ; andb $8, %%al ; jnz 0b 
+    0: inb %%dx, %%al ; andb $8, %%al ; jnz 0b
     0: inb %%dx, %%al ; andb $8, %%al ; jz 0b"
     :::"%edx", "%eax");
 }

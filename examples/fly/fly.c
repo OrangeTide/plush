@@ -33,7 +33,7 @@ int mouse_b, mouse_avail, mouse_buttons;
 float mouse_sens = 2048.0/32768.0;
 
                     /* Vga interface functions */
- // Waits for retrace 
+ // Waits for retrace
 void inline vsync();
  // Sets a 256 color palette. Automagically converts to vga 6 bits/chan
 void set_palette(char *);
@@ -52,7 +52,7 @@ void setup_materials(pl_Mat **mat, unsigned char *pal);
 pl_Obj *setup_landscape(pl_Mat *m, pl_Mat *sm, pl_Mat *sm2);
 
                        /* Main!!! */
-void main() { 
+void main() {
   char lastmessage[80] = "Fly 3.0"; // last message used for status line
   int draw_sky = 1;                 // do we draw the sky?
   int wait_vsync = 0;               // do we wait for vsync?
@@ -82,7 +82,7 @@ void main() {
   mouse_init(); // initialize mouse
 
   printf("\n\nControls:\n"
-         "  Mouse: rotate\n" 
+         "  Mouse: rotate\n"
          "  Mouse buttons: left=move forward, right=move forward fast\n"
          "  s: toggle sky (default on)\n"
          "  -,+: adjust fov (default 90)\n"
@@ -113,17 +113,17 @@ void main() {
   land->Children[1] = 0;
 
   frames = 0;     // set up for framerate counter
-  t = uclock(); 
+  t = uclock();
   while (!done) { // main loop
     // save time when the frame began, to be used later.
-    float prevtime = uclock() / (float) UCLOCKS_PER_SEC; 
+    float prevtime = uclock() / (float) UCLOCKS_PER_SEC;
     frames++; // update for framerate counter
-  
+
     memset(framebuffer,1,64000); // clear our doublebuffer
 
     // lots of rendering special casing
     if (draw_sky) { // if we're drawing the sky
-      if (cam->Y > 2000) { // if above the sky, only render the skies, with 
+      if (cam->Y > 2000) { // if above the sky, only render the skies, with
                            // no far clip plane
         cam->ClipBack = 0.0;
         plRenderBegin(cam);
@@ -148,7 +148,7 @@ void main() {
         (frames/ (float) (uclock() - t)) * (float) UCLOCKS_PER_SEC);
     // display last message
     plTextPrintf(cam,cam->ClipLeft+5,cam->ClipBottom-16,0.0,156,lastmessage);
-       
+
 
     if (wait_vsync) vsync(); // wait for vsync
       /* blit to screen. This is pretty darn fast on ip5's but on a 486 you
@@ -163,22 +163,22 @@ void main() {
     if (mouse_b & 2) { // if right button hit, we go forward quickly
       cam->X -=
         prevtime*4*sin(cam->Pan*PL_PI/180.0)*cos(cam->Pitch*PL_PI/180.0);
-      cam->Z += 
+      cam->Z +=
         prevtime*4*cos(cam->Pan*PL_PI/180.0)*cos(cam->Pitch*PL_PI/180.0);
-      cam->Y += 
+      cam->Y +=
         prevtime*4*sin(cam->Pitch*PL_PI/180.0);
     } else if (mouse_b & 1) { // if left button hit, we go forward slowly
-      cam->X -= 
+      cam->X -=
         prevtime*2*sin(cam->Pan*PL_PI/180.0)*cos(cam->Pitch*PL_PI/180.0);
-      cam->Z += 
+      cam->Z +=
         prevtime*2*cos(cam->Pan*PL_PI/180.0)*cos(cam->Pitch*PL_PI/180.0);
-      cam->Y += 
+      cam->Y +=
         prevtime*2*sin(cam->Pitch*PL_PI/180.0);
     }
     cam->Pitch += (mouse_y*mouse_sens); // update pitch and pan of ship
     cam->Pan -= (mouse_x*mouse_sens);
-    
-    if (cam->X > LAND_SIZE/2) cam->X = LAND_SIZE/2; // make sure we don't go 
+
+    if (cam->X > LAND_SIZE/2) cam->X = LAND_SIZE/2; // make sure we don't go
     if (cam->X < -LAND_SIZE/2) cam->X = -LAND_SIZE/2; // too far away
     if (cam->Z > LAND_SIZE/2) cam->Z = LAND_SIZE/2;
     if (cam->Z < -LAND_SIZE/2) cam->Z = -LAND_SIZE/2;
@@ -196,11 +196,11 @@ void main() {
         sprintf(lastmessage,"FOV: %2.f",cam->Fov);
       break;
         // [ decreases mouse sensitivity
-      case '[': mouse_sens /= 1.1; 
+      case '[': mouse_sens /= 1.1;
         sprintf(lastmessage,"MouseSens: %.3f",mouse_sens);
       break;
         // ] increases mouse sensitivity
-      case ']': mouse_sens *= 1.1; 
+      case ']': mouse_sens *= 1.1;
         sprintf(lastmessage,"MouseSens: %.3f",mouse_sens);
       break;
         // v toggles vsync
@@ -211,12 +211,12 @@ void main() {
       case 's': draw_sky ^= 1;
         sprintf(lastmessage,"Sky %s",draw_sky ? "on" : "off");
       break;
-    } 
+    }
   }
   // set text mode
   set_mode3();
   // clean up
-  free(framebuffer); 
+  free(framebuffer);
   plObjDelete(land);
   plObjDelete(sky);
   plObjDelete(sky2);
@@ -226,13 +226,13 @@ void main() {
   plCamDelete(cam);
 
   printf("This has been a Plush demo app.\n"
-         "Visit the Plush 3D homepage at: \n" 
+         "Visit the Plush 3D homepage at: \n"
          "  http://nullsoft.home.ml.org/plush/\n\n");
 }
 
 void setup_materials(pl_Mat **mat, unsigned char *pal) {
   int i;
-  // create our 3 materials, make the fourth null so that plMatMakeOptPal2() 
+  // create our 3 materials, make the fourth null so that plMatMakeOptPal2()
   // knows where to stop
   mat[0] = plMatCreate();
   mat[1] = plMatCreate();
@@ -247,7 +247,7 @@ void setup_materials(pl_Mat **mat, unsigned char *pal) {
   mat[0]->NumGradients = 2500;
   mat[0]->Ambient[0] = pal[0]*2 - 255; // these calculations are to get the
   mat[0]->Ambient[1] = pal[1]*2 - 255; // distance shading to work right
-  mat[0]->Ambient[2] = pal[2]*2 - 255; 
+  mat[0]->Ambient[2] = pal[2]*2 - 255;
   mat[0]->Diffuse[0] = 127-pal[0];
   mat[0]->Diffuse[1] = 127-pal[1];
   mat[0]->Diffuse[2] = 127-pal[2];
@@ -284,7 +284,7 @@ void setup_materials(pl_Mat **mat, unsigned char *pal) {
   mat[2]->Texture = plReadPCXTex("sky2.pcx",1,1);
   mat[2]->TexScaling = 10.0; //200.0*LAND_SIZE/50000;
   mat[2]->PerspectiveCorrect = 2;
-    
+
   // intialize the materials
   plMatInit(mat[0]);
   plMatInit(mat[1]);
@@ -292,7 +292,7 @@ void setup_materials(pl_Mat **mat, unsigned char *pal) {
 
   // make a nice palette
   plMatMakeOptPal2(pal,1,255,mat);
- 
+
   // map the materials to this new palette
   plMatMapToPal(mat[0],pal,0,255);
   plMatMapToPal(mat[1],pal,0,255);
@@ -305,7 +305,7 @@ void setup_materials(pl_Mat **mat, unsigned char *pal) {
 pl_Obj *setup_landscape(pl_Mat *m, pl_Mat *sm, pl_Mat *sm2) {
   int i;
   // make our root object the land
-  pl_Obj *o = plMakePlane(LAND_SIZE,LAND_SIZE,LAND_DIV-1,m); 
+  pl_Obj *o = plMakePlane(LAND_SIZE,LAND_SIZE,LAND_DIV-1,m);
   // give it a nice random bumpy effect
   for (i = 0; i < o->NumVertices; i ++)
     o->Vertices[i].y += (float) (rand()%1400)-700;
@@ -347,7 +347,7 @@ static void inline fpucopy(void *o, void *i, int len16) {
 
 void inline vsync() {
   __asm__ __volatile__ ("movw $0x3DA, %%dx
-    0: inb %%dx, %%al ; andb $8, %%al ; jnz 0b 
+    0: inb %%dx, %%al ; andb $8, %%al ; jnz 0b
     0: inb %%dx, %%al ; andb $8, %%al ; jz 0b"
     :::"%edx", "%eax");
 }
@@ -391,7 +391,7 @@ void mouse_init() {
   }
   if (mouse_buttons > 3) mouse_buttons = 3;
   printf("%d button mouse found\n",mouse_buttons);
-  
+
 }
 
 void mouse_get() {

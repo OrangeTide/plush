@@ -45,7 +45,7 @@ extern "C" {
 #endif
 
 extern pl_uChar plText_DefaultFont[256*16]; /* Default 8x16 font for plText* */
-extern pl_uInt32 plRender_TriStats[4]; /* Three different triangle counts from 
+extern pl_uInt32 plRender_TriStats[4]; /* Three different triangle counts from
                                           the last plRender() block:
                                           0: initial tris
                                           1: tris after culling
@@ -62,7 +62,7 @@ extern pl_uInt32 plRender_TriStats[4]; /* Three different triangle counts from
   Parameters:
     none
   Returns:
-    a pointer to the material on success, 0 on failure 
+    a pointer to the material on success, 0 on failure
 */
 pl_Mat *plMatCreate();
 
@@ -81,13 +81,13 @@ void plMatDelete(pl_Mat *m);
     m: a pointer to the material to be intialized
   Returns:
     nothing
-  Notes: 
+  Notes:
     you *must* do this before calling plMatMapToPal() or plMatMakeOptPal().
 */
 void plMatInit(pl_Mat *m);
 
 /*
-  plMatMapToPal() maps a material that was created with plMatCreate() and 
+  plMatMapToPal() maps a material that was created with plMatCreate() and
     initialized with plMatInit() to a palette.
   Parameters:
     mat: material to map
@@ -98,14 +98,14 @@ void plMatInit(pl_Mat *m);
   Returns:
     nothing
   Notes:
-    Mapping a material with > 2000 colors can take up to a second or two. 
+    Mapping a material with > 2000 colors can take up to a second or two.
       Be careful, and go easy on plMat.NumGradients ;)
 */
 void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_sInt pstart, pl_sInt pend);
 
 
 /*
-  plMatMakeOptPal() makes an almost optimal palette from materials 
+  plMatMakeOptPal() makes an almost optimal palette from materials
     created with plMatCreate() and initialized with plMatInit().
   Paramters:
     p: palette to create
@@ -116,7 +116,7 @@ void plMatMapToPal(pl_Mat *m, pl_uChar *pal, pl_sInt pstart, pl_sInt pend);
   Returns:
     nothing
 */
-void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart, 
+void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart,
                      pl_sInt pend, pl_Mat **materials, pl_sInt nmats);
 
 
@@ -124,7 +124,7 @@ void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart,
 ** Object Functions (obj.c)
 ******************************************************************************/
 
-/* 
+/*
   plObjCreate() allocates an object
   Paramters:
     np: Number of vertices in object
@@ -139,12 +139,12 @@ pl_Obj *plObjCreate(pl_uInt32 np, pl_uInt32 nf);
     that was allocated with plObjCreate();
   Paramters:
     o: object to delete
-  Returns: 
+  Returns:
     nothing
 */
 void plObjDelete(pl_Obj *o);
 
-/* 
+/*
   plObjClone() creates an exact but independent duplicate of an object and
     all of it's subobjects
   Paramters:
@@ -161,7 +161,7 @@ pl_Obj *plObjClone(pl_Obj *o);
     s: the scaling factor
   Returns:
     a pointer to o.
-  Notes: This scales it slowly, by going through each vertex and scaling it's 
+  Notes: This scales it slowly, by going through each vertex and scaling it's
     position. Avoid doing this in realtime.
 */
 pl_Obj *plObjScale(pl_Obj *o, pl_Float s);
@@ -172,7 +172,7 @@ pl_Obj *plObjScale(pl_Obj *o, pl_Float s);
     o: a pointer to the object to stretch
     x,y,z: the x y and z stretch factors
   Returns:
-    a pointer to o. 
+    a pointer to o.
   Notes: same as plObjScale(). Note that the normals are preserved.
 */
 pl_Obj *plObjStretch(pl_Obj *o, pl_Float x, pl_Float y, pl_Float z);
@@ -181,7 +181,7 @@ pl_Obj *plObjStretch(pl_Obj *o, pl_Float x, pl_Float y, pl_Float z);
    plObjTranslate() translates an object
    Parameters:
      o: a pointer to the object to translate
-     x,y,z: translation in object space 
+     x,y,z: translation in object space
    Returns:
      a pointer to o
    Notes: same has plObjScale().
@@ -195,8 +195,8 @@ pl_Obj *plObjTranslate(pl_Obj *o, pl_Float x, pl_Float y, pl_Float z);
     o: a pointer to the object to flip normals of
   Returns:
     a pointer to o
-  Notes: 
-    Not especially fast. 
+  Notes:
+    Not especially fast.
     A call to plObjFlipNormals() or plObjCalcNormals() will restore the normals
 */
 pl_Obj *plObjFlipNormals(pl_Obj *o);
@@ -206,7 +206,7 @@ pl_Obj *plObjFlipNormals(pl_Obj *o);
   Paramters:
     o: the object to set the material of
     m: the material to set it to
-    th: "transcend hierarchy". If set, it will set the 
+    th: "transcend hierarchy". If set, it will set the
         material of all subobjects too.
   Returns:
     nothing
@@ -218,7 +218,7 @@ void plObjSetMat(pl_Obj *o, pl_Mat *m, pl_Bool th);
      and all subobjects.
    Paramters:
      obj: the object
-   Returns: 
+   Returns:
      nothing
 */
 void plObjCalcNormals(pl_Obj *obj);
@@ -234,7 +234,7 @@ void plObjCalcNormals(pl_Obj *obj);
   Returns:
     nothing
   Notes:
-    Sets up the internal structures. 
+    Sets up the internal structures.
     DO NOT CALL THIS ROUTINE FROM WITHIN A plRender*() block.
 */
 void plClipSetFrustum(pl_Cam *cam);
@@ -251,8 +251,8 @@ void plClipSetFrustum(pl_Cam *cam);
 void plClipRenderFace(pl_Face *face);
 
 /*
-  plClipNeeded() decides whether the face is in the frustum, intersecting 
-    the frustum, or completely out of the frustum craeted with 
+  plClipNeeded() decides whether the face is in the frustum, intersecting
+    the frustum, or completely out of the frustum craeted with
     plClipSetFrustum().
   Parameters:
     face: the face to check
@@ -285,10 +285,10 @@ pl_Light *plLightCreate();
            in degrees of the light (PL_LIGHT_VECTOR)
     intensity: the intensity of the light (0.0-1.0)
     halfDist: the distance at which PL_LIGHT_POINT_DISTANCE is 1/2 intensity
-  Returns: 
+  Returns:
     a pointer to light.
 */
-pl_Light *plLightSet(pl_Light *light, pl_uChar mode, pl_Float x, pl_Float y, 
+pl_Light *plLightSet(pl_Light *light, pl_uChar mode, pl_Float x, pl_Float y,
                      pl_Float z, pl_Float intensity, pl_Float halfDist);
 
 /*
@@ -311,7 +311,7 @@ void plTexDelete(pl_Texture *t);
 ** Camera Handling Routines (cam.c)
 ******************************************************************************/
 
-/* 
+/*
   plCamCreate() allocates a new camera
   Parameters:
     sw: screen width
@@ -331,7 +331,7 @@ pl_Cam *plCamCreate(pl_uInt sw, pl_uInt sh, pl_Float ar, pl_Float fov,
   Parameters:
     c: the camera to set the target of
     x,y,z: the worldspace coordinate of the target
-  Returns: 
+  Returns:
     nothing
   Notes:
     Sets the pitch and pan of the camera. Does not touch the roll.
@@ -339,11 +339,11 @@ pl_Cam *plCamCreate(pl_uInt sw, pl_uInt sh, pl_Float ar, pl_Float fov,
 void plCamSetTarget(pl_Cam *c, pl_Float x, pl_Float y, pl_Float z);
 
 /*
-   plCamDelete() frees all memory associated with a camera excluding 
+   plCamDelete() frees all memory associated with a camera excluding
      framebuffers and Z buffers
    Paramters:
      c: camera to free
-   Returns: 
+   Returns:
      nothing
 */
 void plCamDelete(pl_Cam *c);
@@ -354,18 +354,18 @@ void plCamDelete(pl_Cam *c);
 
 /*
  plRenderBegin() begins the rendering process.
-   Parameters: 
+   Parameters:
      Camera: camera to use for rendering
-   Returns: 
+   Returns:
      nothing
-   Notes: 
-     Only one rendering process can occur at a time. 
+   Notes:
+     Only one rendering process can occur at a time.
      Uses plClip*(), so don't use them within or around a plRender() block.
 */
 void plRenderBegin(pl_Cam *Camera);
 
 /*
-   plRenderLight() adds a light to the scene. 
+   plRenderLight() adds a light to the scene.
    Parameters:
      light: light to add to scene
    Returns:
@@ -374,22 +374,22 @@ void plRenderBegin(pl_Cam *Camera);
 */
 void plRenderLight(pl_Light *light);
 
-/* 
+/*
    plRenderObj() adds an object and all of it's subobjects to the scene.
    Parameters:
      obj: object to render
    Returns:
      nothing
-   Notes: if Camera->Sort is zero, objects are rendered in the order that 
+   Notes: if Camera->Sort is zero, objects are rendered in the order that
      they are added to the scene.
 */
 void plRenderObj(pl_Obj *obj);
 
-/* 
+/*
    plRenderEnd() actually does the rendering, and closes the rendering process
-   Paramters: 
+   Paramters:
      none
-   Returns: 
+   Returns:
      nothing
 */
 void plRenderEnd();
@@ -398,7 +398,7 @@ void plRenderEnd();
 ** Object Primitives Code (make.c)
 ******************************************************************************/
 
-/* 
+/*
   plMakePlane() makes a plane centered at the origin facing up the y axis.
   Parameters:
     w: width of the plane (along the x axis)
@@ -421,7 +421,7 @@ pl_Obj *plMakePlane(pl_Float w, pl_Float d, pl_uInt res, pl_Mat *m);
 */
 pl_Obj *plMakeBox(pl_Float w, pl_Float d, pl_Float h, pl_Mat *m);
 
-/* 
+/*
   plMakeCone() makes a cone centered at the origin
   Parameters:
     r: radius of the cone (x-z axis)
@@ -446,7 +446,7 @@ pl_Obj *plMakeCone(pl_Float r, pl_Float h, pl_uInt div, pl_Bool cap, pl_Mat *m);
   Returns:
     pointer to object created.
 */
-pl_Obj *plMakeCylinder(pl_Float r, pl_Float h, pl_uInt divr, pl_Bool captop, 
+pl_Obj *plMakeCylinder(pl_Float r, pl_Float h, pl_uInt divr, pl_Bool captop,
                        pl_Bool capbottom, pl_Mat *m);
 
 /*
@@ -472,14 +472,14 @@ pl_Obj *plMakeSphere(pl_Float r, pl_uInt divr, pl_uInt divh, pl_Mat *m);
   Returns:
     pointer to object created.
 */
-pl_Obj *plMakeTorus(pl_Float r1, pl_Float r2, pl_uInt divrot, 
+pl_Obj *plMakeTorus(pl_Float r1, pl_Float r2, pl_uInt divrot,
                     pl_uInt divrad, pl_Mat *m);
 
 /******************************************************************************
 ** File Readers (read_*.c)
 ******************************************************************************/
 
-/* 
+/*
   plRead3DSObj() reads a 3DS object
   Parameters:
     fn: filename of object to read
@@ -531,8 +531,8 @@ pl_Obj *plReadJAWObj(char *fn, pl_Mat *m);
     optimize: will optimize colors (USE THIS TOO)
   Returns:
     pointer to texture
-  Notes: 
-    The PCX must be a 8bpp zSoft version 5 PCX. The texture's palette will 
+  Notes:
+    The PCX must be a 8bpp zSoft version 5 PCX. The texture's palette will
       be optimized, and the texture might be scaled up so that it's dimensions
       will be a nice power of two.
 */
@@ -548,7 +548,7 @@ pl_Texture *plReadPCXTex(char *fn, pl_Bool rescale, pl_Bool optimize);
     matrix: an array of 16 pl_Floats that is a 4x4 matrix
     m: the axis to rotate around, 1=X, 2=Y, 3=Z.
     Deg: the angle in degrees to rotate
-  Returns: 
+  Returns:
     nothing
 */
 void plMatrixRotate(pl_Float matrix[], pl_uChar m, pl_Float Deg);
@@ -563,14 +563,14 @@ void plMatrixRotate(pl_Float matrix[], pl_uChar m, pl_Float Deg);
 */
 void plMatrixTranslate(pl_Float m[], pl_Float x, pl_Float y, pl_Float z);
 
-/* 
+/*
   plMatrixMultiply() multiplies two matrices
   Parameters:
     dest: destination matrix will be multipled by src
     src: source matrix
   Returns:
     nothing
-  Notes: 
+  Notes:
     this is the same as dest = dest*src (since the order *does* matter);
 */
 void plMatrixMultiply(pl_Float *dest, pl_Float src[]);
@@ -583,10 +583,10 @@ void plMatrixMultiply(pl_Float *dest, pl_Float src[]);
     outx,outy,outz: pointers to output coords.
   Returns:
     nothing
-  Notes: 
+  Notes:
     applies the matrix to the 3d point to produce the transformed 3d point
 */
-void plMatrixApply(pl_Float *m, pl_Float x, pl_Float y, pl_Float z, 
+void plMatrixApply(pl_Float *m, pl_Float x, pl_Float y, pl_Float z,
                    pl_Float *outx, pl_Float *outy, pl_Float *outz);
 
 /*
@@ -643,7 +643,7 @@ void plSplineGetPoint(pl_Spline *s, pl_Float frame, pl_Float *out);
     Parameters:
       font: a pointer to a 8xX bitmapped font
       height: the height of the font (X)
-    Returns: 
+    Returns:
       nothing
 */
 
@@ -673,7 +673,7 @@ void plTextPutChar(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
     y: the y screen position of the top of the text
     z: the depth of the text (used when cam->zBuffer is set)
     color: the color to make the text
-    string: 
+    string:
       the characters to put. '\n' and '\t' are handled as one would expect
   Returns:
     nothing
@@ -689,7 +689,7 @@ void plTextPutStr(pl_Cam *cam, pl_sInt x, pl_sInt y, pl_Float z,
     y: the y screen position of the top of the text
     z: the depth of the text (used when cam->zBuffer is set)
     color: the color to make the text
-    format: 
+    format:
       the characters to put, with printf() formatting codes.
       '\n' and '\t' are handled as one would expect
     ...: any additional parameters specified by format

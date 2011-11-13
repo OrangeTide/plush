@@ -21,7 +21,7 @@ void plCamSetTarget(pl_Cam *c, pl_Float x, pl_Float y, pl_Float z) {
     c->Pan = (pl_Float) (-atan(dx/dz)*(180.0/PL_PI));
     dz /= cos(c->Pan*(PL_PI/180.0));
     c->Pitch = (pl_Float) (atan(dy/dz)*(180.0/PL_PI));
-  } else if (dz < -0.0001f) { 
+  } else if (dz < -0.0001f) {
     c->Pan = (pl_Float) (180.0-atan(dx/dz)*(180.0/PL_PI));
     dz /= cos((c->Pan-180.0f)*(PL_PI/180.0));
     c->Pitch = (pl_Float) (-atan(dy/dz)*(180.0/PL_PI));

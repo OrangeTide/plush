@@ -18,7 +18,7 @@ extern "C" {
 #define plMin(x,y) (( ( x ) > ( y ) ? ( y ) : ( x )))
 #define plMax(x,y) (( ( x ) < ( y ) ? ( y ) : ( x )))
 
-/* 
+/*
 ** Shade modes. Used with plMat.ShadeType
 ** Note that (PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE) and
 ** (PL_SHADE_FLAT|PL_SHADE_FLAT_DISTANCE) are valid shading modes.

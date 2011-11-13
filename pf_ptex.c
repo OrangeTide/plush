@@ -34,7 +34,7 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
   pl_uChar stat;
 
   pl_Bool zb = (zbuf&&TriFace->Material->zBufferable) ? 1 : 0;
- 
+
   if (TriFace->Material->Environment) Texture = TriFace->Material->Environment;
   else Texture = TriFace->Material->Texture;
 
@@ -109,7 +109,7 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
       V1 = MappingV2;
       stat = 1|8;
     }
-  } 
+  }
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
@@ -182,7 +182,7 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
         idUL = (iULnext - iUL)>>nmb;
         idVL = (iVLnext - iVL)>>nmb;
         n = nm;
-        Xlen -= n; 
+        Xlen -= n;
         if (Xlen < 0) n += Xlen;
         if (zb) do {
             if (*zbuf < ZL) {
@@ -215,7 +215,7 @@ void plPF_PTexF(pl_Cam *cam, pl_Face *TriFace) {
     X1 += dX1;
     X2 += dX2;
     Y0++;
-  } 
+  }
 }
 
 void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
@@ -244,7 +244,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
 
   /* Cache line */
   pl_sInt32 Y0,Y1;
-  pl_sInt32 C1, dC1=0, X2, dX2=0, X1, dX1=0; 
+  pl_sInt32 C1, dC1=0, X2, dX2=0, X1, dX1=0;
 
   /* Cache line */
   pl_Float dU1=0, U1, dZ1=0, Z1, V1, dV1=0;
@@ -360,7 +360,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
   Y0 = Y2-Y0;
   while (Y0--) {
     if (!Y1--) {
-      dY = Y2-((TriFace->Scry[i1]+(1<<19))>>20); 
+      dY = Y2-((TriFace->Scry[i1]+(1<<19))>>20);
       if (dY) {
         if (stat & 1) {
           X1 = TriFace->Scrx[i1];
@@ -395,7 +395,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
       gmem += XL1;
       zbuf += XL1;
       XL1 += Xlen-scrwidth;
-      t = 65536.0f / ZL;     
+      t = 65536.0f / ZL;
       iUL = iULnext = ((pl_sInt32) (UL*t));
       iVL = iVLnext = ((pl_sInt32) (VL*t));
       do {
@@ -410,7 +410,7 @@ void plPF_PTexG(pl_Cam *cam, pl_Face *TriFace) {
         idUL = (iULnext - iUL)>>nmb;
         idVL = (iVLnext - iVL)>>nmb;
         n = nm;
-        Xlen -= n;  
+        Xlen -= n;
         if (Xlen < 0) n += Xlen;
         if (zb) do {
             if (*zbuf < ZL) {

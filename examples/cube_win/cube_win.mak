@@ -6,29 +6,29 @@
 !IF "$(CFG)" == ""
 CFG=cube_win - Win32 Debug
 !MESSAGE No configuration specified.  Defaulting to cube_win - Win32 Debug.
-!ENDIF 
+!ENDIF
 
 !IF "$(CFG)" != "cube_win - Win32 Release" && "$(CFG)" !=\
  "cube_win - Win32 Debug"
 !MESSAGE Invalid configuration "$(CFG)" specified.
 !MESSAGE You can specify a configuration when running NMAKE on this makefile
 !MESSAGE by defining the macro CFG on the command line.  For example:
-!MESSAGE 
+!MESSAGE
 !MESSAGE NMAKE /f "cube_win.mak" CFG="cube_win - Win32 Debug"
-!MESSAGE 
+!MESSAGE
 !MESSAGE Possible choices for configuration are:
-!MESSAGE 
+!MESSAGE
 !MESSAGE "cube_win - Win32 Release" (based on "Win32 (x86) Application")
 !MESSAGE "cube_win - Win32 Debug" (based on "Win32 (x86) Application")
-!MESSAGE 
+!MESSAGE
 !ERROR An invalid configuration is specified.
-!ENDIF 
+!ENDIF
 
 !IF "$(OS)" == "Windows_NT"
 NULL=
-!ELSE 
+!ELSE
 NULL=nul
-!ENDIF 
+!ENDIF
 ################################################################################
 # Begin Project
 # PROP Target_Last_Scanned "cube_win - Win32 Debug"
@@ -53,7 +53,7 @@ INTDIR=.\Release
 
 ALL : "$(OUTDIR)\cube_win.exe"
 
-CLEAN : 
+CLEAN :
 	-@erase ".\Release\cube_win.exe"
 	-@erase ".\Release\main.obj"
 	-@erase ".\Release\cds.obj"
@@ -66,19 +66,19 @@ CLEAN :
 # ADD BASE CPP /nologo /W3 /GX /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
 # ADD CPP /nologo /W3 /GX /D "WIN32" /D "NDEBUG" /D "_WINDOWS" /YX /c
 CPP_PROJ=/nologo /ML /W3 /GX /D "WIN32" /D "NDEBUG" /D "_WINDOWS"\
- /Fp"$(INTDIR)/cube_win.pch" /YX /Fo"$(INTDIR)/" /c 
+ /Fp"$(INTDIR)/cube_win.pch" /YX /Fo"$(INTDIR)/" /c
 CPP_OBJS=.\Release/
 CPP_SBRS=
 # ADD BASE MTL /nologo /D "NDEBUG" /win32
 # ADD MTL /nologo /D "NDEBUG" /win32
-MTL_PROJ=/nologo /D "NDEBUG" /win32 
+MTL_PROJ=/nologo /D "NDEBUG" /win32
 # ADD BASE RSC /l 0x409 /d "NDEBUG"
 # ADD RSC /l 0x409 /d "NDEBUG"
-RSC_PROJ=/l 0x409 /fo"$(INTDIR)/main.res" /d "NDEBUG" 
+RSC_PROJ=/l 0x409 /fo"$(INTDIR)/main.res" /d "NDEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
-BSC32_FLAGS=/nologo /o"$(OUTDIR)/cube_win.bsc" 
+BSC32_FLAGS=/nologo /o"$(OUTDIR)/cube_win.bsc"
 BSC32_SBRS=
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /machine:I386
@@ -86,7 +86,7 @@ LINK32=link.exe
 LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib\
  advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib\
  odbccp32.lib /nologo /subsystem:windows /incremental:no\
- /pdb:"$(OUTDIR)/cube_win.pdb" /machine:I386 /out:"$(OUTDIR)/cube_win.exe" 
+ /pdb:"$(OUTDIR)/cube_win.pdb" /machine:I386 /out:"$(OUTDIR)/cube_win.exe"
 LINK32_OBJS= \
 	".\Release\main.obj" \
 	".\Release\cds.obj" \
@@ -116,7 +116,7 @@ INTDIR=.\Debug
 
 ALL : "$(OUTDIR)\cube_win.exe"
 
-CLEAN : 
+CLEAN :
 	-@erase ".\Debug\vc40.pdb"
 	-@erase ".\Debug\vc40.idb"
 	-@erase ".\Debug\cube_win.exe"
@@ -133,19 +133,19 @@ CLEAN :
 # ADD BASE CPP /nologo /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
 # ADD CPP /nologo /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS" /YX /c
 CPP_PROJ=/nologo /MLd /W3 /Gm /GX /Zi /Od /D "WIN32" /D "_DEBUG" /D "_WINDOWS"\
- /Fp"$(INTDIR)/cube_win.pch" /YX /Fo"$(INTDIR)/" /Fd"$(INTDIR)/" /c 
+ /Fp"$(INTDIR)/cube_win.pch" /YX /Fo"$(INTDIR)/" /Fd"$(INTDIR)/" /c
 CPP_OBJS=.\Debug/
 CPP_SBRS=
 # ADD BASE MTL /nologo /D "_DEBUG" /win32
 # ADD MTL /nologo /D "_DEBUG" /win32
-MTL_PROJ=/nologo /D "_DEBUG" /win32 
+MTL_PROJ=/nologo /D "_DEBUG" /win32
 # ADD BASE RSC /l 0x409 /d "_DEBUG"
 # ADD RSC /l 0x409 /d "_DEBUG"
-RSC_PROJ=/l 0x409 /fo"$(INTDIR)/main.res" /d "_DEBUG" 
+RSC_PROJ=/l 0x409 /fo"$(INTDIR)/main.res" /d "_DEBUG"
 BSC32=bscmake.exe
 # ADD BASE BSC32 /nologo
 # ADD BSC32 /nologo
-BSC32_FLAGS=/nologo /o"$(OUTDIR)/cube_win.bsc" 
+BSC32_FLAGS=/nologo /o"$(OUTDIR)/cube_win.bsc"
 BSC32_SBRS=
 LINK32=link.exe
 # ADD BASE LINK32 kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /nologo /subsystem:windows /debug /machine:I386
@@ -154,7 +154,7 @@ LINK32_FLAGS=kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib\
  advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib\
  odbccp32.lib /nologo /subsystem:windows /incremental:yes\
  /pdb:"$(OUTDIR)/cube_win.pdb" /debug /machine:I386\
- /out:"$(OUTDIR)/cube_win.exe" 
+ /out:"$(OUTDIR)/cube_win.exe"
 LINK32_OBJS= \
 	".\Debug\main.obj" \
 	".\Debug\cds.obj" \
@@ -167,25 +167,25 @@ LINK32_OBJS= \
   $(LINK32_FLAGS) $(LINK32_OBJS)
 <<
 
-!ENDIF 
+!ENDIF
 
 .c{$(CPP_OBJS)}.obj:
-   $(CPP) $(CPP_PROJ) $<  
+   $(CPP) $(CPP_PROJ) $<
 
 .cpp{$(CPP_OBJS)}.obj:
-   $(CPP) $(CPP_PROJ) $<  
+   $(CPP) $(CPP_PROJ) $<
 
 .cxx{$(CPP_OBJS)}.obj:
-   $(CPP) $(CPP_PROJ) $<  
+   $(CPP) $(CPP_PROJ) $<
 
 .c{$(CPP_SBRS)}.sbr:
-   $(CPP) $(CPP_PROJ) $<  
+   $(CPP) $(CPP_PROJ) $<
 
 .cpp{$(CPP_SBRS)}.sbr:
-   $(CPP) $(CPP_PROJ) $<  
+   $(CPP) $(CPP_PROJ) $<
 
 .cxx{$(CPP_SBRS)}.sbr:
-   $(CPP) $(CPP_PROJ) $<  
+   $(CPP) $(CPP_PROJ) $<
 
 ################################################################################
 # Begin Target
@@ -197,7 +197,7 @@ LINK32_OBJS= \
 
 !ELSEIF  "$(CFG)" == "cube_win - Win32 Debug"
 
-!ENDIF 
+!ENDIF
 
 ################################################################################
 # Begin Source File
@@ -205,7 +205,7 @@ LINK32_OBJS= \
 SOURCE=.\main.rc
 DEP_RSC_MAIN_=\
 	".\cds.ico"\
-	
+
 
 "$(INTDIR)\main.res" : $(SOURCE) $(DEP_RSC_MAIN_) "$(INTDIR)"
    $(RSC) $(RSC_PROJ) $(SOURCE)
@@ -218,7 +218,7 @@ DEP_RSC_MAIN_=\
 SOURCE=.\cube.c
 DEP_CPP_CUBE_=\
 	".\..\plush.h"\
-	
+
 
 "$(INTDIR)\cube.obj" : $(SOURCE) $(DEP_CPP_CUBE_) "$(INTDIR)"
 
@@ -231,7 +231,7 @@ SOURCE=.\main.c
 DEP_CPP_MAIN_C=\
 	".\cds.h"\
 	".\..\plush.h"\
-	
+
 
 "$(INTDIR)\main.obj" : $(SOURCE) $(DEP_CPP_MAIN_C) "$(INTDIR)"
 
@@ -243,7 +243,7 @@ DEP_CPP_MAIN_C=\
 SOURCE=.\cds.c
 DEP_CPP_CDS_C=\
 	".\cds.h"\
-	
+
 
 "$(INTDIR)\cds.obj" : $(SOURCE) $(DEP_CPP_CDS_C) "$(INTDIR)"
 
@@ -258,7 +258,7 @@ SOURCE=\Prog\Projects\Plush\plush_vc.lib
 
 !ELSEIF  "$(CFG)" == "cube_win - Win32 Debug"
 
-!ENDIF 
+!ENDIF
 
 # End Source File
 # End Target

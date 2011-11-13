@@ -9,9 +9,9 @@ Copyright (c) 1996-2000, Justin Frankel
 
 static pl_uInt _plHiBit(pl_uInt16);
 static pl_uInt _plOptimizeImage(pl_uChar *, pl_uChar *, pl_uInt32);
-static pl_sInt _plReadPCX(char *filename, pl_uInt16 *width, pl_uInt16 *height, 
+static pl_sInt _plReadPCX(char *filename, pl_uInt16 *width, pl_uInt16 *height,
                           pl_uChar **pal, pl_uChar **data);
-static void _plRescaleImage(pl_uChar *in, pl_uChar *out, pl_uInt inx, 
+static void _plRescaleImage(pl_uChar *in, pl_uChar *out, pl_uInt inx,
                             pl_uInt iny, pl_uInt outx, pl_uInt outy);
 
 pl_Texture *plReadPCXTex(char *fn, pl_Bool rescale, pl_Bool optimize) {
@@ -75,7 +75,7 @@ static pl_uInt _plOptimizeImage(pl_uChar *pal, pl_uChar *data, pl_uInt32 len) {
   for (x = 0; x < 256; x ++) remap[x] = (pl_uChar)x;
   lastused = 255;
   firstunused = 0;
-  for (;;) {  
+  for (;;) {
     while (firstunused < 256 && colors[firstunused]) firstunused++;
     if (firstunused > 255) break;
     while (lastused >= 0 && !colors[lastused]) lastused--;
@@ -115,7 +115,7 @@ static pl_sInt _plReadPCX(char *filename, pl_uInt16 *width, pl_uInt16 *height,
   if (!*data) { fclose(fp); return -128; }
   sx = *height;
   data2 = *data;
-  do { 
+  do {
     int xpos = 0;
     do {
       char c = fgetc(fp);
@@ -142,7 +142,7 @@ static pl_sInt _plReadPCX(char *filename, pl_uInt16 *width, pl_uInt16 *height,
   return 0;
 }
 
-static void _plRescaleImage(pl_uChar *in, pl_uChar *out, pl_uInt inx, 
+static void _plRescaleImage(pl_uChar *in, pl_uChar *out, pl_uInt inx,
                             pl_uInt iny, pl_uInt outx, pl_uInt outy) {
   pl_uInt x;
   pl_uInt32 X, dX, dY, Y;
@@ -157,6 +157,6 @@ static void _plRescaleImage(pl_uChar *in, pl_uChar *out, pl_uInt inx,
     do {
       *out++ = ptr[X>>16];
       X += dX;
-    } while (--x); 
+    } while (--x);
   } while (--outy);
 }

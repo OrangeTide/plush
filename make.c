@@ -7,13 +7,13 @@ Copyright (c) 1996-2000, Justin Frankel
  Notes:
    Most of these routines are highly unoptimized.
    They could all use some work, such as more capable divisions (Box is
-   most notable), etc... The mapping coordinates are all set up nicely, 
+   most notable), etc... The mapping coordinates are all set up nicely,
    though.
 ******************************************************************************/
 
 #include "plush.h"
 
-pl_Obj *plMakeTorus(pl_Float r1, pl_Float r2, pl_uInt divrot, pl_uInt divrad, 
+pl_Obj *plMakeTorus(pl_Float r1, pl_Float r2, pl_uInt divrot, pl_uInt divrad,
                     pl_Mat *m) {
   pl_Obj *o;
   pl_Vertex *v;
@@ -112,7 +112,7 @@ pl_Obj *plMakeSphere(pl_Float r, pl_uInt divr, pl_uInt divh, pl_Mat *m) {
   }
   f = o->Faces;
   v = o->Vertices + 2;
-  a = 0.0; 
+  a = 0.0;
   U = 0;
   dU = 65535/divr;
   dV = V = 65535/divh;
@@ -180,7 +180,7 @@ pl_Obj *plMakeSphere(pl_Float r, pl_uInt divr, pl_uInt divh, pl_Mat *m) {
   return (o);
 }
 
-pl_Obj *plMakeCylinder(pl_Float r, pl_Float h, pl_uInt divr, pl_Bool captop, 
+pl_Obj *plMakeCylinder(pl_Float r, pl_Float h, pl_uInt divr, pl_Bool captop,
                        pl_Bool capbottom, pl_Mat *m) {
   pl_Obj *o;
   pl_Vertex *v, *topverts, *bottomverts, *topcapvert=0, *bottomcapvert=0;
@@ -197,19 +197,19 @@ pl_Obj *plMakeCylinder(pl_Float r, pl_Float h, pl_uInt divr, pl_Bool captop,
   v = o->Vertices;
   topverts = v;
   for (i = 0; i < divr; i ++) {
-    v->y = h/2.0f; 
-    v->x = (pl_Float) (r*cos((double) a)); 
+    v->y = h/2.0f;
+    v->x = (pl_Float) (r*cos((double) a));
     v->z = (pl_Float)(r*sin(a));
     v->xformedx = (pl_Float) (32768.0 + (32768.0*cos((double) a))); // temp
     v->xformedy = (pl_Float) (32768.0 + (32768.0*sin((double) a))); // use xf
-    v++; 
+    v++;
     a += da;
   }
   bottomverts = v;
   a = 0.0;
   for (i = 0; i < divr; i ++) {
-    v->y = -h/2.0f; 
-    v->x = (pl_Float) (r*cos((double) a)); 
+    v->y = -h/2.0f;
+    v->x = (pl_Float) (r*cos((double) a));
     v->z = (pl_Float) (r*sin(a));
     v->xformedx = (pl_Float) (32768.0 + (32768.0*cos((double) a)));
     v->xformedy = (pl_Float) (32768.0 + (32768.0*sin((double) a)));
@@ -217,13 +217,13 @@ pl_Obj *plMakeCylinder(pl_Float r, pl_Float h, pl_uInt divr, pl_Bool captop,
   }
   if (captop && divr != 3) {
     topcapvert = v;
-    v->y = h / 2.0f; 
+    v->y = h / 2.0f;
     v->x = v->z = 0.0f;
     v++;
   }
   if (capbottom && divr != 3) {
     bottomcapvert = v;
-    v->y = -h / 2.0f; 
+    v->y = -h / 2.0f;
     v->x = v->z = 0.0f;
     v++;
   }
@@ -328,7 +328,7 @@ pl_Obj *plMakeCone(pl_Float r, pl_Float h, pl_uInt div,
     v++;
   }
   if (cap && div != 3) {
-    v->y = h / -2.0f; 
+    v->y = h / -2.0f;
     v->x = v->z = 0.0f;
     v->xformedx = (pl_Float) (1<<15);
     v->xformedy = (pl_Float) (1<<15);
@@ -381,7 +381,7 @@ pl_Obj *plMakeCone(pl_Float r, pl_Float h, pl_uInt div,
   return (o);
 }
 
-static pl_uChar verts[6*6] = { 
+static pl_uChar verts[6*6] = {
   0,4,1, 1,4,5, 0,1,2, 3,2,1, 2,3,6, 3,7,6,
   6,7,4, 4,7,5, 1,7,3, 7,1,5, 2,6,0, 4,0,6
 };

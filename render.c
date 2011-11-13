@@ -116,13 +116,13 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
   plMatrixMultiply(oMatrix,tempMatrix);
   plMatrixMultiply(oMatrix,_cMatrix);
   plMatrixMultiply(nMatrix,_cMatrix);
-  
+
   x = obj->NumVertices;
   vertex = obj->Vertices;
 
   do {
-    MACRO_plMatrixApply(oMatrix,vertex->x,vertex->y,vertex->z, 
-                  vertex->xformedx, vertex->xformedy, vertex->xformedz); 
+    MACRO_plMatrixApply(oMatrix,vertex->x,vertex->y,vertex->z,
+                  vertex->xformedx, vertex->xformedy, vertex->xformedz);
     MACRO_plMatrixApply(nMatrix,vertex->nx,vertex->ny,vertex->nz,
                   vertex->xformednx,vertex->xformedny,vertex->xformednz);
     vertex++;
@@ -136,7 +136,7 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
     return;
   }
 
-  plRender_TriStats[0] += obj->NumFaces; 
+  plRender_TriStats[0] += obj->NumFaces;
   _numfaces += obj->NumFaces;
   x = obj->NumFaces;
 
@@ -145,7 +145,7 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
     {
       MACRO_plMatrixApply(nMatrix,face->nx,face->ny,face->nz,nx,ny,nz);
     }
-    if (!obj->BackfaceCull || (MACRO_plDotProduct(nx,ny,nz, 
+    if (!obj->BackfaceCull || (MACRO_plDotProduct(nx,ny,nz,
         face->Vertices[0]->xformedx, face->Vertices[0]->xformedy,
         face->Vertices[0]->xformedz) < 0.0000001)) {
       if (plClipNeeded(face)) {
@@ -156,32 +156,32 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
               tmp2 = 0.0;
               light = _lights[i].light;
               if (light->Type & PL_LIGHT_POINT_ANGLE) {
-                double nx2 = _lights[i].l[0] - face->Vertices[0]->xformedx; 
-                double ny2 = _lights[i].l[1] - face->Vertices[0]->xformedy; 
+                double nx2 = _lights[i].l[0] - face->Vertices[0]->xformedx;
+                double ny2 = _lights[i].l[1] - face->Vertices[0]->xformedy;
                 double nz2 = _lights[i].l[2] - face->Vertices[0]->xformedz;
                 MACRO_plNormalizeVector(nx2,ny2,nz2);
                 tmp2 = MACRO_plDotProduct(nx,ny,nz,nx2,ny2,nz2)*light->Intensity;
-              } 
+              }
               if (light->Type & PL_LIGHT_POINT_DISTANCE) {
-                double nx2 = _lights[i].l[0] - face->Vertices[0]->xformedx; 
-                double ny2 = _lights[i].l[1] - face->Vertices[0]->xformedy; 
+                double nx2 = _lights[i].l[0] - face->Vertices[0]->xformedx;
+                double ny2 = _lights[i].l[1] - face->Vertices[0]->xformedy;
                 double nz2 = _lights[i].l[2] - face->Vertices[0]->xformedz;
                 if (light->Type & PL_LIGHT_POINT_ANGLE) {
                    nx2 = (1.0 - 0.5*((nx2*nx2+ny2*ny2+nz2*nz2)/
                            light->HalfDistSquared));
                   tmp2 *= plMax(0,plMin(1.0,nx2))*light->Intensity;
-                } else { 
+                } else {
                   tmp2 = (1.0 - 0.5*((nx2*nx2+ny2*ny2+nz2*nz2)/
                     light->HalfDistSquared));
                   tmp2 = plMax(0,plMin(1.0,tmp2))*light->Intensity;
                 }
-              } 
-              if (light->Type == PL_LIGHT_VECTOR) 
+              }
+              if (light->Type == PL_LIGHT_VECTOR)
                 tmp2 = MACRO_plDotProduct(nx,ny,nz,_lights[i].l[0],_lights[i].l[1],_lights[i].l[2])
                   * light->Intensity;
               if (tmp2 > 0.0) tmp += tmp2;
               else if (obj->BackfaceIllumination) tmp -= tmp2;
-            } /* End of light loop */ 
+            } /* End of light loop */
           } /* End of flat shading if */
           if (face->Material->_st & PL_SHADE_FLAT_DISTANCE)
             tmp += 1.0-(face->Vertices[0]->xformedz+face->Vertices[1]->xformedz+
@@ -196,7 +196,7 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
           face->eMappingV[1] = 32768 - (pl_sInt32) (face->Vertices[1]->xformedny*32768.0);
           face->eMappingU[2] = 32768 + (pl_sInt32) (face->Vertices[2]->xformednx*32768.0);
           face->eMappingV[2] = 32768 - (pl_sInt32) (face->Vertices[2]->xformedny*32768.0);
-        } 
+        }
         if (face->Material->_st &(PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE)) {
           register pl_uChar a;
           for (a = 0; a < 3; a ++) {
@@ -206,18 +206,18 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
                 tmp2 = 0.0;
                 light = _lights[i].light;
                 if (light->Type & PL_LIGHT_POINT_ANGLE) {
-                  nx = _lights[i].l[0] - face->Vertices[a]->xformedx; 
-                  ny = _lights[i].l[1] - face->Vertices[a]->xformedy; 
+                  nx = _lights[i].l[0] - face->Vertices[a]->xformedx;
+                  ny = _lights[i].l[1] - face->Vertices[a]->xformedy;
                   nz = _lights[i].l[2] - face->Vertices[a]->xformedz;
                   MACRO_plNormalizeVector(nx,ny,nz);
                   tmp2 = MACRO_plDotProduct(face->Vertices[a]->xformednx,
                                       face->Vertices[a]->xformedny,
                                       face->Vertices[a]->xformednz,
                                       nx,ny,nz) * light->Intensity;
-                } 
+                }
                 if (light->Type & PL_LIGHT_POINT_DISTANCE) {
-                  double nx2 = _lights[i].l[0] - face->Vertices[a]->xformedx; 
-                  double ny2 = _lights[i].l[1] - face->Vertices[a]->xformedy; 
+                  double nx2 = _lights[i].l[0] - face->Vertices[a]->xformedx;
+                  double ny2 = _lights[i].l[1] - face->Vertices[a]->xformedy;
                   double nz2 = _lights[i].l[2] - face->Vertices[a]->xformedz;
                   if (light->Type & PL_LIGHT_POINT_ANGLE) {
                      double t= (1.0 - 0.5*((nx2*nx2+ny2*ny2+nz2*nz2)/light->HalfDistSquared));
@@ -240,12 +240,12 @@ static void _RenderObj(pl_Obj *obj, pl_Float *bmatrix, pl_Float *bnmatrix) {
             if (face->Material->_st & PL_SHADE_GOURAUD_DISTANCE)
               tmp += 1.0-face->Vertices[a]->xformedz/face->Material->FadeDist;
             face->Shades[a] = (pl_Float) tmp;
-          } /* End of vertex loop for */ 
+          } /* End of vertex loop for */
         } /* End of gouraud shading mask if */
         _faces[facepos].zd = face->Vertices[0]->xformedz+
         face->Vertices[1]->xformedz+face->Vertices[2]->xformedz;
         _faces[facepos++].face = face;
-        plRender_TriStats[1] ++; 
+        plRender_TriStats[1] ++;
       } /* Is it in our area Check */
     } /* Backface Check */
     _numfaces = facepos;
@@ -287,9 +287,9 @@ static void _hsort(_faceInfo *base, int nel, int dir) {
 
 #define Comp(x,y) (( x ).zd < ( y ).zd ? 1 : 0)
 
-static void _sift_down(int L, int U, int dir) {	
+static void _sift_down(int L, int U, int dir) {
   static int c;
-  while (1) { 
+  while (1) {
     c=L+L;
     if (c>U) break;
     if ( (c < U) && dir^Comp(Base[c+1],Base[c])) c++;

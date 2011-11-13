@@ -17,17 +17,17 @@ void set_mode3();
 
 int clearfb = 1; // Are we clearing the framebuffer
 
-void my_moveout(pl_CameraType *Camera, 
+void my_moveout(pl_CameraType *Camera,
                 unsigned long int offs, unsigned long int len) {
   memcpy((void *)
         __djgpp_conventional_base+0xA0000+offs,Camera->frameBuffer+offs,len);
 }
 
-void my_movein(pl_CameraType *Camera, 
+void my_movein(pl_CameraType *Camera,
                unsigned long int offs, unsigned long int len) {
   if (clearfb) {
     memset(Camera->frameBuffer+offs, 0, len);
-    if (Camera->zBuffer)  
+    if (Camera->zBuffer)
      memset((Camera->zBuffer + offs),0,(sizeof(pl_ZBufferType)*len));
   }
 }
@@ -101,7 +101,7 @@ void main(int argc, char **argv) {
   printf("%s\n%s\n\n",plVersionString, plCopyrightString);
   printf("Object 1:: Points: %d, Faces: %d\n",
          (int) myobj1->NumVertices,(int) myobj1->NumFaces);
-  printf("Object 2:: Points: %d, Faces: %d\n", 
+  printf("Object 2:: Points: %d, Faces: %d\n",
          (int) myobj2->NumVertices,(int) myobj2->NumFaces);
   printf("Keys: \n"
          "  t : toggles texturemapping of arrowhead & sphere (default on)\n"
@@ -113,7 +113,7 @@ void main(int argc, char **argv) {
          "  -,+: zoom in,out\n"
          "  l : toggle translucent sphere (default on)\n"
          "\n");
-         
+
   printf("Hit any key to begin");
   fflush(stdout);
   getch();
@@ -121,15 +121,15 @@ void main(int argc, char **argv) {
   framebuffer = malloc(screenWidth*screenHeight);
   if (!framebuffer) {
     set_mode3();
-    printf("Error: not enough memory for framebuffer\n"); 
+    printf("Error: not enough memory for framebuffer\n");
     exit(1);
   }
-  zbuffer = (pl_ZBufferType *) 
+  zbuffer = (pl_ZBufferType *)
     malloc(sizeof(pl_ZBufferType)*screenWidth*screenHeight);
   Camera = plNewCamera(screenWidth,screenHeight,
-                       (screenWidth*3.0)/(screenHeight*4.0),  
+                       (screenWidth*3.0)/(screenHeight*4.0),
                        40.0,1,framebuffer,zbuffer);
-  if (zbuffer) 
+  if (zbuffer)
     memset(zbuffer,0,(sizeof(pl_ZBufferType)*
            Camera->ScreenWidth*Camera->ScreenHeight));
   memset(framebuffer,0,(Camera->ScreenWidth*Camera->ScreenHeight));
@@ -162,7 +162,7 @@ void main(int argc, char **argv) {
     myobj2->Xa+= 1.0;
     myobj2->Ya+= 1.0;
     myobj2->Za+= 1.0;
-   
+
     if (Camera->zBuffer) Camera->Sort = 0;
     else Camera->Sort = 1;
     plRenderBegin(Camera);
@@ -175,8 +175,8 @@ void main(int argc, char **argv) {
     plWriteBuffer(Camera,my_moveout,my_movein);
     if (kbhit()) switch(getch()) {
       case 27: done = 1; break;
-      case 'c': clearfb = !clearfb; 
-        if (clearfb) { 
+      case 'c': clearfb = !clearfb;
+        if (clearfb) {
           plInitScanLineBuffers(Camera);
           memset(Camera->frameBuffer,0,
                 Camera->ScreenWidth*Camera->ScreenHeight);
@@ -187,20 +187,20 @@ void main(int argc, char **argv) {
       case '-': Camera->Fov ++; break;
       case '+': case '=': Camera->Fov--; break;
       case 'l': mat2.Transparent ^= 1; SetUpColors(); break;
-      case 'z': if (Camera->zBuffer) Camera->zBuffer = NULL; 
+      case 'z': if (Camera->zBuffer) Camera->zBuffer = NULL;
                 else { Camera->zBuffer = zbuffer;
-                   if (zbuffer) 
+                   if (zbuffer)
                      memset(zbuffer,0,(sizeof(pl_ZBufferType)*
                      Camera->ScreenWidth*Camera->ScreenHeight));
-                } 
+                }
       break;
-      case 'e': if (mat1.Environment) mat1.Environment = NULL; 
+      case 'e': if (mat1.Environment) mat1.Environment = NULL;
                 else mat1.Environment = tex2;
                 SetUpColors();
       break;
-      case 't': if (mat1.Texture) mat1.Texture = NULL; 
+      case 't': if (mat1.Texture) mat1.Texture = NULL;
                 else mat1.Texture = tex1;
-                SetUpColors(); 
+                SetUpColors();
             break;
       case '1': mat1.ShadeType++; if (mat1.ShadeType > PL_SHADE_GOURAUD) mat1.ShadeType = PL_SHADE_NONE; SetUpColors(); break;
       case '2': mat2.ShadeType++; if (mat2.ShadeType > PL_SHADE_GOURAUD) mat2.ShadeType = PL_SHADE_NONE; SetUpColors(); break;
@@ -211,7 +211,7 @@ void main(int argc, char **argv) {
   if (ticks) fps = (182 * frames) / ticks;
   else fps = 0;
   set_mode3();
-  printf("There were: %d.%d seconds and %d frames\n",(ticks * 10) / 182, 
+  printf("There were: %d.%d seconds and %d frames\n",(ticks * 10) / 182,
                    ((ticks * 100) / 182) % 10, frames);
   printf("%d.%d fps\n", fps/10, fps % 10);
   plFreeObject(myobj1);
@@ -224,7 +224,7 @@ void main(int argc, char **argv) {
 
 void inline wait_vsync() {
   __asm__ __volatile__ ("movw $0x3DA, %%dx
-    0: inb %%dx, %%al ; andb $8, %%al ; jnz 0b 
+    0: inb %%dx, %%al ; andb $8, %%al ; jnz 0b
     0: inb %%dx, %%al ; andb $8, %%al ; jz 0b"
     :::"%edx", "%eax");
 }

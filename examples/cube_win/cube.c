@@ -32,7 +32,7 @@ void cubeSetupColors(char *pal) {
   mat.Shininess = 4;
   mat.ShadeType = PL_SHADE_FLAT;
   mat.Priority = 0;
-  mat.Red = 10; 
+  mat.Red = 10;
   mat.Green = 10;
   mat.Blue = 10;
   mat.RedSpec = 150;
@@ -45,7 +45,7 @@ void cubeSetupColors(char *pal) {
   plPMAddMaterial(&mat);
   plPMEnd();
   pal[0] = pal[1] = pal[2] = 0;
-  
+
 }
 
 

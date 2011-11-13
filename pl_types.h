@@ -11,9 +11,9 @@
 extern "C" {
 #endif
 
-/* 
+/*
 ** Texture type. Read textures with plReadPCXTex(), and assign them to
-** plMat.Environment or plMat.Texture. 
+** plMat.Environment or plMat.Texture.
 */
 typedef struct _pl_Texture {
   pl_uChar *Data;            /* Texture data */
@@ -24,7 +24,7 @@ typedef struct _pl_Texture {
   pl_uInt NumColors;         /* Number of colors used in texture */
 } pl_Texture;
 
-/* 
+/*
 ** Material type. Create materials with plMatCreate().
 */
 typedef struct _pl_Mat {
@@ -32,10 +32,10 @@ typedef struct _pl_Mat {
   pl_sInt Diffuse[3];          /* RGB of diffuse (0-255 is a good range) */
   pl_sInt Specular[3];         /* RGB of "specular" highlights (0-255) */
   pl_uInt Shininess;           /* Shininess of material. 1 is dullest */
-  pl_Float FadeDist;           /* For distance fading, distance at 
+  pl_Float FadeDist;           /* For distance fading, distance at
                                   which intensity is 0 */
   pl_uChar ShadeType;          /* Shade type: PL_SHADE_* */
-  pl_uChar Transparent;        /* Transparency index (0 = none), 4 = alot 
+  pl_uChar Transparent;        /* Transparency index (0 = none), 4 = alot
                                   Note: transparencies disable textures */
   pl_uChar PerspectiveCorrect; /* Correct textures every n pixels */
   pl_Texture *Texture;         /* Texture map (see pl_Texture) above */
@@ -61,12 +61,12 @@ typedef struct _pl_Mat {
 */
 typedef struct _pl_Vertex {
   pl_Float x, y, z;              /* Vertex coordinate (objectspace) */
-  pl_Float xformedx, xformedy, xformedz;   
-                                 /* Transformed vertex 
+  pl_Float xformedx, xformedy, xformedz;
+                                 /* Transformed vertex
                                     coordinate (cameraspace) */
   pl_Float nx, ny, nz;           /* Unit vertex normal (objectspace) */
-  pl_Float xformednx, xformedny, xformednz; 
-                                 /* Transformed unit vertex normal 
+  pl_Float xformednx, xformedny, xformednz;
+                                 /* Transformed unit vertex normal
                                     (cameraspace) */
 } pl_Vertex;
 
@@ -80,9 +80,9 @@ typedef struct _pl_Face {
   pl_sInt32 Scrx[3], Scry[3];  /* Projected screen coordinates
                                   (12.20 fixed point) */
   pl_Float Scrz[3];            /* Projected 1/Z coordinates */
-  pl_sInt32 MappingU[3], MappingV[3]; 
-                               /* 16.16 Texture mapping coordinates */ 
-  pl_sInt32 eMappingU[3], eMappingV[3]; 
+  pl_sInt32 MappingU[3], MappingV[3];
+                               /* 16.16 Texture mapping coordinates */
+  pl_sInt32 eMappingU[3], eMappingV[3];
                                /* 16.16 Environment map coordinates */
   pl_Float fShade;             /* Flat intensity */
   pl_Float sLighting;          /* Face static lighting. Should usually be 0.0 */
@@ -90,8 +90,8 @@ typedef struct _pl_Face {
   pl_Float vsLighting[3];      /* Vertex static lighting. Should be 0.0 */
 } pl_Face;
 
-/* 
-** Object 
+/*
+** Object
 */
 typedef struct _pl_Obj {
   pl_uInt32 NumVertices;              /* Number of vertices */
@@ -101,11 +101,11 @@ typedef struct _pl_Obj {
   struct _pl_Obj *Children[PL_MAX_CHILDREN];
                                       /* Children */
   pl_Bool BackfaceCull;               /* Are backfacing polys drawn? */
-  pl_Bool BackfaceIllumination;       /* Illuminated by lights behind them? */ 
+  pl_Bool BackfaceIllumination;       /* Illuminated by lights behind them? */
   pl_Bool GenMatrix;                  /* Generate Matrix from the following
                                          if set */
   pl_Float Xp, Yp, Zp, Xa, Ya, Za;    /* Position and rotation of object:
-                                         Note: rotations are around 
+                                         Note: rotations are around
                                          X then Y then Z. Measured in degrees */
   pl_Float Matrix[16];                /* Transformation matrix */
   pl_Float RotMatrix[16];             /* Rotation only matrix (for normals) */
@@ -133,7 +133,7 @@ typedef struct _pl_Light {
                                   otherwise if PL_LIGHT_VECTOR,
                                   Unit vector */
   pl_Float Intensity;           /* Intensity. 0.0 is off, 1.0 is full */
-  pl_Float HalfDistSquared;     /* Distance squared at which 
+  pl_Float HalfDistSquared;     /* Distance squared at which
                                    PL_LIGHT_POINT_DISTANCE is 50% */
 } pl_Light;
 
@@ -146,7 +146,7 @@ typedef struct _pl_Cam {
   pl_sChar Sort;                 /* Sort polygons, -1 f-t-b, 1 b-t-f, 0 no */
   pl_Float ClipBack;             /* Far clipping ( < 0.0 is none) */
   pl_sInt ClipTop, ClipLeft;     /* Screen Clipping */
-  pl_sInt ClipBottom, ClipRight; 
+  pl_sInt ClipBottom, ClipRight;
   pl_uInt ScreenWidth, ScreenHeight; /* Screen dimensions */
   pl_sInt CenterX, CenterY;      /* Center of screen */
   pl_Float X, Y, Z;              /* Camera position in worldspace */

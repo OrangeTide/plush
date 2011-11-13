@@ -17,17 +17,17 @@ extern "C" {
 /* Maximum lights per scene -- if you exceed this, they will be ignored */
 #define PL_MAX_LIGHTS (32)
 
-/* Maximum number of triangles per scene -- if you exceed this, entire 
+/* Maximum number of triangles per scene -- if you exceed this, entire
 objects will be ignored. You can increase this if you need it. It takes
 approximately 8*PL_MAX_TRIANGLES bytes of memory. i.e. the default of
-16384 consumes 128kbytes of memory. not really a big deal, 
+16384 consumes 128kbytes of memory. not really a big deal,
 */
 
 #define PL_MAX_TRIANGLES (16384)
 
 typedef float pl_ZBuffer;              /* z-buffer type (must be float) */
 typedef float pl_Float;                /* General floating point */
-typedef float pl_IEEEFloat32;          /* IEEE 32 bit floating point */ 
+typedef float pl_IEEEFloat32;          /* IEEE 32 bit floating point */
 typedef signed long int pl_sInt32;     /* signed 32 bit integer */
 typedef unsigned long int pl_uInt32;   /* unsigned 32 bit integer */
 typedef signed short int pl_sInt16;    /* signed 16 bit integer */

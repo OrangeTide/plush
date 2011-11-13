@@ -61,12 +61,12 @@ void plPF_SolidF(pl_Cam *cam, pl_Face *TriFace) {
       ZL = Z1; Z1 = Z2; Z2 = ZL;
       stat = 1|8;
     }
-  } 
+  }
 
   if (zb) {
     XL1 = ((dX1-dX2)*dY+(1<<19))>>20;
     if (XL1) dZL = ((dZ1-dZ2)*dY)/XL1;
-    else { 
+    else {
       XL1 = (X2-X1+(1<<19))>>20;
       if (zb && XL1) dZL = (Z2-Z1)/XL1;
       else dZL = 0.0;
@@ -102,7 +102,7 @@ void plPF_SolidF(pl_Cam *cam, pl_Face *TriFace) {
     XL1 = (X1+(1<<19))>>20;
     XL2 = (X2+(1<<19))>>20;
     ZL = Z1;
-    XL2 -= XL1; 
+    XL2 -= XL1;
     if (XL2 > 0) {
       zbuf += XL1;
       gmem += XL1;
@@ -112,7 +112,7 @@ void plPF_SolidF(pl_Cam *cam, pl_Face *TriFace) {
             *zbuf = ZL;
             *gmem = bc;
           }
-          gmem++; 
+          gmem++;
           zbuf++;
           ZL += dZL;
         } while (--XL2);
@@ -147,7 +147,7 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
 
   PUTFACE_SORT();
 
-  
+
   C1 = (pl_sInt32) (TriFace->Shades[i0]*nc);
   C2 = (pl_sInt32) (TriFace->Shades[i1]*nc);
   C3 = (pl_sInt32) (TriFace->Shades[i2]*nc);
@@ -189,7 +189,7 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
       X1 = TriFace->Scrx[i1];
       stat = 1|8;
     }
-  } 
+  }
 
   gmem += (Y0 * cam->ScreenWidth);
   zbuf += (Y0 * cam->ScreenWidth);
@@ -234,9 +234,9 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
     XL1 = (X1+(1<<19))>>20;
     XL2 = (X2+(1<<19))>>20;
     ZL = Z1;
-    XL2 -= XL1; 
+    XL2 -= XL1;
     if (XL2 > 0) {
-      gmem += XL1; 
+      gmem += XL1;
       zbuf += XL1;
       XL1 += XL2;
       if (zb) do {
@@ -244,7 +244,7 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
             *zbuf = ZL;
             if (CL >= maxColor) *gmem=remap[maxColorNonShift];
             else if (CL > 0) *gmem = remap[CL>>16];
-            else *gmem = remap[0];                    
+            else *gmem = remap[0];
           }
           gmem++;
           zbuf++;
@@ -254,7 +254,7 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
       else do {
           if (CL >= maxColor) *gmem++=remap[maxColorNonShift];
           else if (CL > 0) *gmem++ = remap[CL>>16];
-          else *gmem++ = remap[0];                    
+          else *gmem++ = remap[0];
           CL += dCL;
         } while (--XL2);
       gmem -= XL1;
@@ -263,7 +263,7 @@ void plPF_SolidG(pl_Cam *cam, pl_Face *TriFace) {
     gmem += cam->ScreenWidth;
     zbuf += cam->ScreenWidth;
     X1 += dX1;
-    X2 += dX2; 
+    X2 += dX2;
     C1 += dC1;
     Z1 += dZ1;
     Y0++;

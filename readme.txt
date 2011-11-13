@@ -34,7 +34,7 @@ I. LICENSE
   Justin Frankel
   justin@nullsoft.com
 
-     
+
 II. FEATURES
 
   Changes in 1.2.0:
@@ -49,18 +49,18 @@ II. FEATURES
     Totally portable ANSI C source, tested on:
       DOS32: Watcom C 10.5, DJGPP v2 (gcc 2.7.2.1)
       Win32: Visual C++ 4.0
-      Unix variants: Linux, Solaris, SunOS, HP/UX, AIX 
+      Unix variants: Linux, Solaris, SunOS, HP/UX, AIX
                      (gcc, and native CC where available)
       MacOS: Codewarrior 9, 10
-    Rasterization: 
+    Rasterization:
       8bpp only
       Z-buffer or painters algorithm
-      Solid, Environment, Textured, Perspective Textured, 
+      Solid, Environment, Textured, Perspective Textured,
         Perspective Environment, Textured Environment, Translucent fills
       None, Flat, Gouraud, Distance lightshading
     Unlimited number of cameras
       Pitch, Pan, and Roll control
-      Target tracking  
+      Target tracking
     Unlimited number of point and directional lights, each with own intensity
       Point lights with distance falloff
     Hierarchical Objects
@@ -110,12 +110,12 @@ III. FILES IN THIS ARCHIVE
 	README.TXT		This file
 
 IV. INSTALLATION/COMPILATION
-  Look/modify the appropriate makefile, or create a project with all the 
+  Look/modify the appropriate makefile, or create a project with all the
 .c files in it. pl_conf.h and pl_defs.h have some defines that should be
 editted for your platform.
-  
+
 V. NOTES
-  For some platforms (i.e. DOS), in your startup code you *must* disable 
+  For some platforms (i.e. DOS), in your startup code you *must* disable
 floating point exceptions for some parts of Plush (i.e. perspective correction)
 to work right. You can do this using
 
@@ -123,19 +123,19 @@ to work right. You can do this using
 _control87(MCW_EM,MCW_EM);
 
 VI. LIBRARY INFORMATION
-  Well, this library is neither fast nor well documented, but it is a good 
+  Well, this library is neither fast nor well documented, but it is a good
 example of decent api design and overall engine implementation. Hope it brings
 joy to peoples' hearts.
 
 
 VII. DOCUMENTATION/MORE INFORMATION
-  At the time of this release, API documentation is minimal. I am currently 
+  At the time of this release, API documentation is minimal. I am currently
 working on elaborate HTML docs, which are about 10% done. The file PL_API.html
 included with this archive contains it. There is also a decent amount
-of documentation in plush.h and pl_*.h. Check back to 
+of documentation in plush.h and pl_*.h. Check back to
 http://nullsoft.com periodically to see if new documentation has
 been released (update 9/14/00- this will never happen).
-  Also, as you might have noticed, no examples have been included with this 
+  Also, as you might have noticed, no examples have been included with this
 release. Please see http://nullsoft.com for examples.
 
 <EOF>

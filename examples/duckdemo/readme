@@ -7,7 +7,7 @@
 
 Okay, here's a little demo app that uses allegro.
 
-I must say that it is a touch slow in that I am using allegro to 
+I must say that it is a touch slow in that I am using allegro to
 blit to screen, it is faster if you do it yourself.
 
 Just a nice duck floating around...

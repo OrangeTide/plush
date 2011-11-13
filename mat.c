@@ -18,7 +18,7 @@ static void _plSetMaterialPutFace(pl_Mat *m);
 static void _plMatSetupTransparent(pl_Mat *m, pl_uChar *pal);
 
 pl_Mat *plMatCreate() {
-  pl_Mat *m; 
+  pl_Mat *m;
   m = (pl_Mat *) malloc(sizeof(pl_Mat));
   if (!m) return 0;
   memset(m,0,sizeof(pl_Mat));
@@ -51,10 +51,10 @@ void plMatInit(pl_Mat *m) {
 
   if (m->Transparent) m->_ft = PL_FILL_TRANSPARENT;
 
-  if (m->_ft == (PL_FILL_TEXTURE|PL_FILL_ENVIRONMENT)) 
+  if (m->_ft == (PL_FILL_TEXTURE|PL_FILL_ENVIRONMENT))
     m->_st = PL_SHADE_NONE;
 
-  if (m->_ft == PL_FILL_SOLID) { 
+  if (m->_ft == PL_FILL_SOLID) {
     if (m->_st == PL_SHADE_NONE) _plGenerateSinglePalette(m);
     else _plGeneratePhongPalette(m);
   } else if (m->_ft == PL_FILL_TEXTURE) {
@@ -62,7 +62,7 @@ void plMatInit(pl_Mat *m) {
       _plGenerateTexturePalette(m,m->Texture);
     else _plGeneratePhongTexturePalette(m,m->Texture);
   } else if (m->_ft == PL_FILL_ENVIRONMENT) {
-    if (m->_st == PL_SHADE_NONE) 
+    if (m->_st == PL_SHADE_NONE)
       _plGenerateTexturePalette(m,m->Environment);
     else _plGeneratePhongTexturePalette(m,m->Environment);
   } else if (m->_ft == (PL_FILL_ENVIRONMENT|PL_FILL_TEXTURE))
@@ -76,7 +76,7 @@ void plMatInit(pl_Mat *m) {
 
 static void _plMatSetupTransparent(pl_Mat *m, pl_uChar *pal) {
   pl_uInt x, intensity;
-  if (m->Transparent) 
+  if (m->Transparent)
   {
     if (m->_AddTable) free(m->_AddTable);
     m->_AddTable = (pl_uInt16 *) malloc(256*sizeof(pl_uInt16));
@@ -84,7 +84,7 @@ static void _plMatSetupTransparent(pl_Mat *m, pl_uChar *pal) {
       intensity = *pal++;
       intensity += *pal++;
       intensity += *pal++;
-      m->_AddTable[x] = ((intensity*(m->_ColorsUsed-m->_tsfact))/768); 
+      m->_AddTable[x] = ((intensity*(m->_ColorsUsed-m->_tsfact))/768);
     }
   }
 }
@@ -154,7 +154,7 @@ static void _plGeneratePhongPalette(pl_Mat *m) {
       c = (pl_sInt) ((cb*m->Specular[x])+(ca*m->Diffuse[x])+m->Ambient[x]);
       *(pal++) = plMax(0,plMin(c,255));
     }
-  } while (--i); 
+  } while (--i);
 }
 
 static void _plGenerateTextureEnvPalette(pl_Mat *m) {
@@ -180,9 +180,9 @@ static void _plGenerateTextureEnvPalette(pl_Mat *m) {
       break;
       case PL_TEXENV_AVG: // average
         for (whichindex = 0; whichindex < m->Texture->NumColors; whichindex++) {
-          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[0])>>1); 
-          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[1])>>1); 
-          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[2])>>1); 
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[0])>>1);
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[1])>>1);
+          *pal++ = (pl_uChar) (((pl_sInt) (*texpal++) + (pl_sInt) envpal[2])>>1);
         }
       break;
       case PL_TEXENV_TEXMINUSENV: // tex-env
@@ -250,7 +250,7 @@ static void _plGeneratePhongTexturePalette(pl_Mat *m, pl_Texture *t) {
   pl_uChar *ppal, *pal;
   pl_sInt c, i, i2, x;
   pl_uInt num_shades;
-  
+
   if (t->NumColors) num_shades = (m->NumGradients / t->NumColors);
   else num_shades=1;
 
@@ -301,51 +301,51 @@ static void _plSetMaterialPutFace(pl_Mat *m) {
   m->_PutFace = 0;
   switch (m->_ft) {
     case PL_FILL_TRANSPARENT: switch(m->_st) {
-      case PL_SHADE_NONE: case PL_SHADE_FLAT: 
-      case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT: 
-        m->_PutFace = plPF_TransF; 
+      case PL_SHADE_NONE: case PL_SHADE_FLAT:
+      case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT:
+        m->_PutFace = plPF_TransF;
       break;
-      case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE: 
-      case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE: 
+      case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE:
+      case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE:
         m->_PutFace = plPF_TransG;
       break;
     }
     break;
     case PL_FILL_SOLID: switch(m->_st) {
-      case PL_SHADE_NONE: case PL_SHADE_FLAT: 
-      case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT: 
+      case PL_SHADE_NONE: case PL_SHADE_FLAT:
+      case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT:
         m->_PutFace = plPF_SolidF;
       break;
-      case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE: 
-      case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE: 
+      case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE:
+      case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE:
         m->_PutFace = plPF_SolidG;
       break;
-    } 
+    }
     break;
     case PL_FILL_ENVIRONMENT:
-    case PL_FILL_TEXTURE: 
+    case PL_FILL_TEXTURE:
       if (m->PerspectiveCorrect) switch (m->_st) {
-        case PL_SHADE_NONE: case PL_SHADE_FLAT: 
-        case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT: 
+        case PL_SHADE_NONE: case PL_SHADE_FLAT:
+        case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT:
           m->_PutFace = plPF_PTexF;
         break;
-        case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE: 
-        case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE: 
+        case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE:
+        case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE:
           m->_PutFace = plPF_PTexG;
         break;
-      } 
+      }
       else switch (m->_st) {
-        case PL_SHADE_NONE: case PL_SHADE_FLAT: 
-        case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT: 
+        case PL_SHADE_NONE: case PL_SHADE_FLAT:
+        case PL_SHADE_FLAT_DISTANCE: case PL_SHADE_FLAT_DISTANCE|PL_SHADE_FLAT:
           m->_PutFace = plPF_TexF;
         break;
-        case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE: 
-        case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE: 
+        case PL_SHADE_GOURAUD: case PL_SHADE_GOURAUD_DISTANCE:
+        case PL_SHADE_GOURAUD|PL_SHADE_GOURAUD_DISTANCE:
           m->_PutFace = plPF_TexG;
         break;
       }
     break;
-    case PL_FILL_TEXTURE|PL_FILL_ENVIRONMENT: 
+    case PL_FILL_TEXTURE|PL_FILL_ENVIRONMENT:
       m->_PutFace = plPF_TexEnv;
     break;
   }
@@ -361,7 +361,7 @@ static int mdist(_ct *a, _ct *b) {
   return ((a->r-b->r)*(a->r-b->r)+(a->g-b->g)*(a->g-b->g)+(a->b-b->b)*(a->b-b->b));
 }
 
-void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart, 
+void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart,
                      pl_sInt pend, pl_Mat **materials, pl_sInt nmats) {
   pl_uChar *allColors = 0;
   pl_sInt numColors = 0, nc, x;
@@ -382,7 +382,7 @@ void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart,
 
   for (x = 0; x < nmats; x ++) {
     if (materials[x]) {
-      if (materials[x]->_RequestedColors) 
+      if (materials[x]->_RequestedColors)
         memcpy(allColors + (numColors*3), materials[x]->_RequestedColors,
              materials[x]->_ColorsUsed*3);
       numColors += materials[x]->_ColorsUsed;
@@ -393,7 +393,7 @@ void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart,
     memcpy(p+pstart*3,allColors,numColors*3);
     free(allColors);
     return;
-  } 
+  }
 
   colorBlock = (_ct *) malloc(sizeof(_ct)*numColors);
   for (x = 0; x < numColors; x++) {
@@ -422,7 +422,7 @@ void plMatMakeOptPal(pl_uChar *p, pl_sInt pstart,
     if (newnext != -1) {
       colorBlock[current].next = colorBlock + newnext;
       current = newnext;
-    } 
+    }
   } while (newnext != -1);
   colorBlock[current].next = 0; /* terminate the list */
 
